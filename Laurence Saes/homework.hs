@@ -292,5 +292,5 @@ primePermutation srt stp = rmdups (getTrippleSequences ( foldr (++) [] permutati
                    
 -- primePermutation 1000 9999
 -- 296962999629
-
+-- Time 2 hours
 
