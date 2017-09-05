@@ -177,19 +177,39 @@ testGroup f i = map (\g -> length (filter (==True) ( map f g)) == 1 ) i
 prependNumber :: Int -> Int -> Int
 prependNumber i j = i * (10 ^ (length (show j))) + j
 
-generateCardNumbers :: Int -> Int -> [Int] -> [[Int]]
-generateCardNumbers i ccLength startWith = map (\x -> generateCreditCardNumbers (prependNumber x i) ccLength ) startWith
+generateCardNumbers :: Int -> [Int] -> [Int] -> [[Int]]
+generateCardNumbers i ccLengths startWith = concat (
+                                                  map (\x ->
+                                                      map ( \ccLength ->
+                                                        generateCreditCardNumbers (prependNumber x i) ccLength )
+                                                      ccLengths )
+                                                  startWith )
 
 -- start with 34 or 37 and the size is 15
 testAmericanExpress :: Int -> Bool
 testAmericanExpress i = and doTest
-                        where ccLength = 15
+                        where ccLength = [15]
                               startWith = [34,37]
                               groups = generateCardNumbers i ccLength startWith
                               doTest = testGroup isAmericanExpress groups
 
--- Run with quickCheckWith stdArgs { maxSize = 9999999999999 }  (\(Positive x) -> testAmericanExpress x)
+testMasterCard :: Int -> Bool
+testMasterCard i = and doTest
+                      where ccLength = [16]
+                            startWith = concat [[2221..2720],[51..55]]
+                            groups = generateCardNumbers i ccLength startWith
+                            doTest = testGroup isMaster groups
 
+testVisa :: Int -> Bool
+testVisa i = and doTest
+                    where ccLength = [13,16,19]
+                          startWith =[4]
+                          groups = generateCardNumbers i ccLength startWith
+                          doTest = testGroup isVisa groups
+
+-- Run with quickCheckWith stdArgs { maxSize = 9999999999999 }  (\(Positive x) -> testAmericanExpress x)
+-- Run with quickCheckWith stdArgs { maxSize = 99999999999999 }  (\(Positive x) -> testMasterCard x)
+-- Run with quickCheckWith stdArgs { maxSize = 999999999999999999 }  (\(Positive x) -> testVisa x)
 
 -- isAmericanExpress, isMaster, isVisa :: Integer -> Bool
 
