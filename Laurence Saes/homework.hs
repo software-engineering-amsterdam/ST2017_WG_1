@@ -25,12 +25,7 @@ wextr2l n = sum [ x^2 | x <- [1..n] ]
 wextr2r :: Int -> Int
 wextr2r n = (n * (n+1) * (2 * n + 1)) `div` 6
 
--- Test the functions, note that negative numbers are not tested
-extrs1 :: Int -> Bool
-extrs1 n | n >= 0 = wextr2l n == wextr2r n
-         | otherwise = True
-
--- Run quickCheck extrs1 for extersize 1
+extrs1Answer1 = quickCheck (\(Positive x) -> wextr2l x == wextr2r x)
 
 -- The left side of the expression
 wextr3l :: Int -> Int
@@ -40,12 +35,9 @@ wextr3l n = sum [ x^3 | x <- [1..n] ]
 wextr3r :: Int -> Int
 wextr3r n = ((n * (n+1)) `div` 2) ^ 2
 
--- Test the functions, note that negative numbers are not tested
-extrs1s :: Int -> Bool
-extrs1s n | n >= 0 = wextr3l n == wextr3r n
-         | otherwise = True
+extrs1Answer2 = quickCheck (\(Positive x) -> wextr3l x == wextr3r x)
 
--- Run quickCheck extrs1s for extersize 1
+-- Run quickCheck (\(Positive x) -> wextr3l x == wextr3r x)
 
 -- Prove by induction that if AA is a finite set with |A|=n|A|=n, then |P(A)|=2n|P(A)|=2n.
 
@@ -57,6 +49,7 @@ extrs2 n = 2 ^ setLength == powerSetLength
                       powerSetLength = length powerSet
 
 -- run quickCheck extrs2
+extrs2Answer = quickCheck (\(Positive x) -> extrs2 x)
 
 -- The property is hard to test because of large input data.
 -- Whenever you want to test for exaple the number 1.000.000
@@ -73,10 +66,11 @@ factorial 0 = 1
 factorial n = n * factorial (n - 1)
 
 extrs3 :: Int -> Bool
-extrs3 n | n <= 0 = True
-         | otherwise = factorial n == perms
+extrs3 n = factorial n == perms
            where set = [1..n]
                  perms = length (permutations set)
+
+extrs3Answer = quickCheck (\(Positive x) -> extrs3 x)
 
 -- run quickCheck extrs3
 
