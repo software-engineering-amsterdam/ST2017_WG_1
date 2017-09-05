@@ -133,34 +133,63 @@ flipMap _ _ [] = []
 flipMap f g l = f (head l) : flipMap g f (tail l)
 
 -- Compress number for luhn
-luhnCompress :: Integer -> Integer
+luhnCompress :: Int -> Int
 luhnCompress z = sum (digs z)
 
 -- Do the check
-luhn :: Integer -> Bool
+luhn :: Int -> Bool
 luhn x = sum checkValues `mod` 10 == 0
           where intList = digs x
                 revList = reverse intList
                 checkValues = flipMap id (\x -> luhnCompress (x*2)) revList
 
-isAmericanExpress :: Integer -> Bool
-isAmericanExpress x = longEnought && (startCheck1 || startCheck2)
+isAmericanExpress :: Int -> Bool
+isAmericanExpress x = longEnought && (startCheck1 || startCheck2) && luhn x
                       where showX = show x
                             longEnought = length showX == 15
                             startCheck1 = isPrefixOf "34" showX
                             startCheck2 = isPrefixOf "37" showX
-isMaster :: Integer -> Bool
-isMaster x = longEnought && (startCheck1 || startCheck2)
+
+isMaster :: Int -> Bool
+isMaster x = longEnought && (startCheck1 || startCheck2) && luhn x
                       where showX = show x
                             longEnought = length showX == 16
                             startCheck1 = or (map (\n -> isPrefixOf (show n) showX) [2221..2720] )
                             startCheck2 = or (map (\n -> isPrefixOf (show n) showX) [51..55] )
 
-isVisa :: Integer -> Bool
-isVisa x = longEnought && startCheck
+isVisa :: Int -> Bool
+isVisa x = longEnought && startCheck && luhn x
                       where showX = show x
                             longEnought = (length showX) `elem` [13,16,19]
                             startCheck = isPrefixOf "4" showX
+
+-- luhn check. The last digit is the check bit. One out of 10 is a correct number
+generateCreditCardNumbers :: Int -> Int -> [Int]
+generateCreditCardNumbers i l | inputLength == l - 1 = map (i*10+) [0..9]
+                              | inputLength >= l = generateCreditCardNumbers (i `div` 10) l
+                              | inputLength < l = generateCreditCardNumbers (i*10) l
+                                where inputLength = length (show i)
+
+-- Test if one in each group is valid
+testGroup :: (Int -> Bool) -> [[Int]] -> [Bool]
+testGroup f i = map (\g -> length (filter (==True) ( map f g)) == 1 ) i
+
+prependNumber :: Int -> Int -> Int
+prependNumber i j = i * (10 ^ (length (show j))) + j
+
+generateCardNumbers :: Int -> Int -> [Int] -> [[Int]]
+generateCardNumbers i ccLength startWith = map (\x -> generateCreditCardNumbers (prependNumber x i) ccLength ) startWith
+
+-- start with 34 or 37 and the size is 15
+testAmericanExpress :: Int -> Bool
+testAmericanExpress i = and doTest
+                        where ccLength = 15
+                              startWith = [34,37]
+                              groups = generateCardNumbers i ccLength startWith
+                              doTest = testGroup isAmericanExpress groups
+
+-- Run with quickCheckWith stdArgs { maxSize = 9999999999999 }  (\(Positive x) -> testAmericanExpress x)
+
 
 -- isAmericanExpress, isMaster, isVisa :: Integer -> Bool
 
