@@ -276,7 +276,7 @@ honest = [b | b <- boys, g <- guilty, accuses b g]
 guilty :: [Boy]
 guilty = filter (\b -> length (accusers b) == 3) boys 
 
-------------------------- Bonus 9 & 10 (2 hour) --------------------
+------------------------- Bonus 9 & 10 (2 hours) --------------------
 
 isPythagorean :: Int -> Int -> Int -> Bool
 isPythagorean x y z = x < y && y < z && x * x + y * y == z * z
@@ -297,3 +297,50 @@ getPrimes x ys | prime x = x : getPrimes (head nextForPrime) nextForPrime
 --main :: IO ()
 --main = sum (filter (\x -> x < 2000000) primes)
 -- 142913828922
+
+------------------------- Bonus 49 (2 hours) --------------------
+
+--Credits https://stackoverflow.com/questions/21265454/subsequences-of-length-n-from-list-performance/21288092#21288092
+subsequencesOfSize :: Int -> [a] -> [[a]]
+subsequencesOfSize n xs = let l = length xs
+                          in if n>l then [] else subsequencesBySize xs !! (l-n)
+ where
+   subsequencesBySize [] = [[[]]]
+   subsequencesBySize (x:xs) = let next = subsequencesBySize xs
+                             in zipWith (++) ([]:next) (map (map (x:)) next ++ [[]])
+
+-- https://stackoverflow.com/questions/16108714/haskell-removing-duplicates-from-a-list
+rmdups :: (Ord a) => [a] -> [a]
+rmdups = map head . group . sort
+
+
+getTrippleSequences :: [[Integer]] -> [[Integer]]
+getTrippleSequences [] = []
+getTrippleSequences (x:xs) | length x /= 3 = next
+                           | xyd == yzd = [x1,x2,x3] : next
+                           | otherwise = next  
+                                    where x1 = x !! 0
+                                          x2 = x !! 1
+                                          x3 = x !! 2
+                                          xyd = abs (x1-x2)
+                                          yzd = abs (x2-x3)
+                                          next = getTrippleSequences xs
+
+getPPermutations :: Integer -> [[Integer]]
+getPPermutations prm | permsPrimeC >= 3 = subsequencesOfSize 3 permsPrimeList
+                     | otherwise = []    
+                        where perms = rmdups (permutations (show prm))
+                              permsN = filter (\x -> length (show x) == 4 ) (map read perms)
+                              permsPrimeList = filter prime permsN
+                              permsPrimeC = length (permsPrimeList)
+
+
+primePermutation :: Integer -> Integer -> [[Integer]]
+primePermutation srt stp = rmdups (getTrippleSequences ( foldr (++) [] permutationPrimes ))
+                             where fromList = dropWhile (<srt) primes
+                                   totalPrimeRange = takeWhile (<=stp) fromList
+                                   permutationPrimes = map getPPermutations totalPrimeRange 
+                   
+-- primePermutation 1000 9999
+-- 296962999629
+-- Time 2 hours
