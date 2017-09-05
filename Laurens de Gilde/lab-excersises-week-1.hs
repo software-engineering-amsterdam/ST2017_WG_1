@@ -4,7 +4,7 @@ import Test.QuickCheck
 
 prime :: Integer -> Bool
 prime n = n > 1 && all (\ x -> rem n x /= 0) xs
-	    where xs = takeWhile (\ y -> y^2 <= n) primes
+        where xs = takeWhile (\ y -> y^2 <= n) primes
 
 primes :: [Integer]
 primes = 2 : filter prime [3..] 
@@ -34,9 +34,9 @@ exc2Right n = (n * (n + 1) * (2 * n + 1)) `div` 6
 
 exc2Test :: Int -> Bool
 exc2Test n | n >= 0 = exc2Left n == exc2Right n
-		   | otherwise = True
+           | otherwise = True
 
-exc2 = quickCheck exc2Test	
+exc2 = quickCheck exc2Test  
 
 ---------- Workshop excersise 3 ----------
 
@@ -48,7 +48,7 @@ exc3Right n = ((n * (n + 1)) `div` 2) ^ 2
 
 
 exc3Test n | n >= 0 = exc3Left n == exc3Right n
-		   | otherwise = True
+           | otherwise = True
 
 exc3 = quickCheck exc3Test
 
@@ -65,8 +65,8 @@ exc4Right ns = 2 ^ (length ns)
 
 exc4Test :: Int -> Bool
 exc4Test n = exc4Left ns == exc4Right ns
-		 where
-		 	ns = [1..n]  
+         where
+            ns = [1..n]  
 -- Creating this test simpulates the base case (left side of equation) and the n + 1 case(right side of equation)
 exc4InductionTest n = exc4Test n == exc4Test (n+1)
 
@@ -90,9 +90,9 @@ perms :: [a] ->[[a]]
 perms [] = [[]]
 
 perms (x:xs) = concat (map (insrt x) (perms xs))
-			 where
-			   insrt x [] = [[x]]
-			   insrt x (y:ys) = (x:y:ys) : map (y:) (insrt x ys)
+             where
+               insrt x [] = [[x]]
+               insrt x (y:ys) = (x:y:ys) : map (y:) (insrt x ys)
 
 -- Function credits: http://vvv.tobiassjosten.net/haskell/factorials-in-haskell/
 factorial 0 = 1
@@ -106,7 +106,7 @@ exc5Right :: Int -> Int
 exc5Right n =  factorial n
 
 exc5Test :: [a] -> Bool
-exc5Test ns = exc5Left ns == exc5Right (length ns)	
+exc5Test ns = exc5Left ns == exc5Right (length ns)  
 
 -- Question: 'Is the property hard to test? If you find that it is, can you give a reason why?'
 -- Answer: Same as before. Creating two equations, one for the left and one for the right, and check if these values are the same. I took the factorial function of the web.
@@ -125,16 +125,16 @@ reversal = read . reverse . show
 checkPrimeReversal :: [Integer] -> [Integer]
 checkPrimeReversal [] = []
 checkPrimeReversal (p:ps) | elem (reversal p) ps = p : checkPrimeReversal ps
-						  | otherwise = checkPrimeReversal ps
+                          | otherwise = checkPrimeReversal ps
 checkReversalPrimes (xs) = checkPrimeReversal (primesList xs)
 
 -------------------- Lab excersise 5 --------------------
 
 takeSmallestPrime :: Int -> [Integer] -> Integer
 takeSmallestPrime y ps | prime (sumPrime) = sumPrime
-				       | otherwise = takeSmallestPrime  y (tail ps)
-					   where
-					      sumPrime = sum (take y ps)		
+                       | otherwise = takeSmallestPrime  y (tail ps)
+                       where
+                          sumPrime = sum (take y ps)        
 -- Question: 'Do you have to test that your answer is correct? How could this be checked?'
 -- Answer: In my opinion this does not have to be checked if the answer is correct.
 -- What I am doing it starting from 0 to 101 and if this is not a prime I increment
@@ -158,16 +158,16 @@ data Boy = Matthew | Peter | Jack | Arnold | Carl deriving (Eq, Show)
 
 boys :: [Boy]
 boys = [Matthew, Peter, Jack, Arnold, Carl]
-				  	
+                    
 accuses :: Boy -> Boy -> Bool
 -- Matthew accuses
 accuses Matthew x | x == Carl = False
-				  | x == Matthew = False
-				  | otherwise = True
+                  | x == Matthew = False
+                  | otherwise = True
 -- Peter accuses
 accuses Peter x | x == Matthew = True
-				| x == Jack = True
-				| otherwise = False
+                | x == Jack = True
+                | otherwise = False
 -- Jack accuses
 accuses Jack x = not ( (accuses Matthew x) || (accuses Peter x) )
 -- Arnold accuses
