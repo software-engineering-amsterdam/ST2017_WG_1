@@ -130,11 +130,11 @@ checkReversalPrimes (xs) = checkPrimeReversal (primesList xs)
 
 -------------------- Lab excersise 5 --------------------
 
-takeSmallestPrime :: Int -> Int -> [Integer] -> Integer
-takeSmallestPrime x y ps | prime (sumPrime) = sumPrime
-					     | otherwise = takeSmallestPrime (x+1) (y+1) (ps)
-						 where
-						  	sumPrime = sum ( drop x . take y $ ps)	
+takeSmallestPrime :: Int -> [Integer] -> Integer
+takeSmallestPrime y ps | prime (sumPrime) = sumPrime
+				       | otherwise = takeSmallestPrime  y (tail ps)
+					   where
+					      sumPrime = sum (take y ps)		
 -- Question: 'Do you have to test that your answer is correct? How could this be checked?'
 -- Answer: In my opinion this does not have to be checked if the answer is correct.
 -- What I am doing it starting from 0 to 101 and if this is not a prime I increment
