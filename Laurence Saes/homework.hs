@@ -97,28 +97,72 @@ getConsecutivePrimes ps primesL | length primeList < ps = []
                                             listIsPrime = isPrime (sum primeList)
                                             next = getConsecutivePrimes ps (tail primesL)
 
+
+
 -- length primeList has to be used because primesL is infinit. Length of primesL would cause in an
 -- infinite loop
--- Run with getConsecutivePrimes 101 primes then the answer will be:
+-- Run with sum (getConsecutivePrimes 101 primes) then the answer will be:
 {-
+  37447:
   [83,89,97,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269,271,277,281,283,293,307,311,313,317,331,337,347,349,353,359,367,373,379,383,389,397,401,409,419,421,431,433,439,443,449,457,461,463,467,479,487,491,499,503,509,521,523,541,547,557,563,569,571,577,587,593,599,601,607,613,617,619,631,641,643,647,653,659,661,673,677]
 -}
+
+-- n is consecutive list length
+-- plist is a list of primes
+consecutivePrimeTestC :: Int -> [Int] -> [Int]
+consecutivePrimeTestC n plist | not (isPrime primeNumber) = primeList
+                              | otherwise = consecutivePrimeTestC n (tail plist)
+                                where primeList = take n plist
+                                      primeNumber = (sum (primeList)) + 1
+
+-- Test with consecutivePrimeTestC n primes where n how large the list of primes have to be
+-- What is the smallest counterexample?
+-- with a list of 2 it is [2,3]
+-- with a list of 3 it is [3,5,7]
+-- with a list of 4 it is [2,3,5,7]
+
 
 -- Credits for digs https://stackoverflow.com/questions/3963269/split-a-number-into-its-digits-with-haskell
 digs :: Integral x => x -> [x]
 digs 0 = []
 digs x = digs (x `div` 10) ++ [x `mod` 10]
 
-altMap :: (a -> b) -> (a -> b) -> [a] -> [b]
-altMap _ _ [] = []
-altMap f g (x:xs) = f x : altMap g f xs
+-- Apply function f on 1,3,5,7,9... and g on 2,4,6,8....
+flipMap :: (a -> a) -> (a -> a) -> [a] -> [a]
+flipMap _ _ [] = []
+flipMap f g l = f (head l) : flipMap g f (tail l)
 
-luhnDouble' :: Int -> Int
-luhnDouble' x | x * 2 > 9 = x * 2 - 9
-             | otherwise = x * 2
+-- Compress number for luhn
+luhnCompress :: Integer -> Integer
+luhnCompress z = sum (digs z)
 
-luhn' :: [Int] -> Bool
-luhn' xs = sum (altMap (+0) (luhnDouble') (reverse xs)) `mod` 10 == 0
+-- Do the check
+luhn :: Integer -> Bool
+luhn x = sum checkValues `mod` 10 == 0
+          where intList = digs x
+                revList = reverse intList
+                checkValues = flipMap id (\x -> luhnCompress (x*2)) revList
 
-luhn :: Int -> Bool
-luhn x = luhn' (digs x)
+isAmericanExpress :: Integer -> Bool
+isAmericanExpress x = longEnought && (startCheck1 || startCheck2)
+                      where showX = show x
+                            longEnought = length showX == 15
+                            startCheck1 = isPrefixOf "34" showX
+                            startCheck2 = isPrefixOf "37" showX
+isMaster :: Integer -> Bool
+isMaster x = longEnought && (startCheck1 || startCheck2)
+                      where showX = show x
+                            longEnought = length showX == 16
+                            startCheck1 = or (map (\n -> isPrefixOf (show n) showX) [2221..2720] )
+                            startCheck2 = or (map (\n -> isPrefixOf (show n) showX) [51..55] )
+
+isVisa :: Integer -> Bool
+isVisa x = longEnought && startCheck
+                      where showX = show x
+                            longEnought = (length showX) `elem` [13,16,19]
+                            startCheck = isPrefixOf "4" showX
+
+-- isAmericanExpress, isMaster, isVisa :: Integer -> Bool
+
+
+-- 	(a -> b -> b) -> b -> [a] -> b
