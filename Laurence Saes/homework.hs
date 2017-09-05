@@ -37,6 +37,7 @@ wextr3r n = ((n * (n+1)) `div` 2) ^ 2
 
 extrs1Answer2 = quickCheck (\(Positive x) -> wextr3l x == wextr3r x)
 
+-- Time 1 hour
 -- Run quickCheck (\(Positive x) -> wextr3l x == wextr3r x)
 
 -- Prove by induction that if AA is a finite set with |A|=n|A|=n, then |P(A)|=2n|P(A)|=2n.
@@ -50,6 +51,7 @@ extrs2 n = 2 ^ setLength == powerSetLength
 
 -- run quickCheck extrs2
 extrs2Answer = quickCheck (\(Positive x) -> extrs2 x)
+-- Time 30 minutes
 
 -- The property is hard to test because of large input data.
 -- Whenever you want to test for exaple the number 1.000.000
@@ -71,6 +73,7 @@ extrs3 n = factorial n == perms
                  perms = length (permutations set)
 
 extrs3Answer = quickCheck (\(Positive x) -> extrs3 x)
+-- Time 30 minutes
 
 -- run quickCheck extrs3
 
@@ -87,6 +90,7 @@ reversePrimesMax n = takeWhile (< n) primes
 
 -- Run reversePrimesMax 10000 for a list of reversal primes
 -- This function can be compared with a list of all reversed primes to 10000.
+-- Time 30 minutes
 
 -- Take ps primes and test if prime
 getConsecutivePrimes :: Int -> [Int] -> [Int]
@@ -97,7 +101,7 @@ getConsecutivePrimes ps primesL | length primeList < ps = []
                                             listIsPrime = isPrime (sum primeList)
                                             next = getConsecutivePrimes ps (tail primesL)
 
-
+-- Time 2 hours (because I did length not on primeList but on primesL. This created an infinitive loop)
 
 -- length primeList has to be used because primesL is infinit. Length of primesL would cause in an
 -- infinite loop
@@ -115,6 +119,7 @@ consecutivePrimeTestC n plist | not (isPrime primeNumber) = primeList
                                 where primeList = take n plist
                                       primeNumber = (sum (primeList)) + 1
 
+-- Time 30 minutes
 -- Test with consecutivePrimeTestC n primes where n how large the list of primes have to be
 -- What is the smallest counterexample?
 -- with a list of 2 it is [2,3]
@@ -210,9 +215,7 @@ testVisa i = and doTest
 -- Run with quickCheckWith stdArgs { maxSize = 9999999999999 }  (\(Positive x) -> testAmericanExpress x)
 -- Run with quickCheckWith stdArgs { maxSize = 99999999999999 }  (\(Positive x) -> testMasterCard x)
 -- Run with quickCheckWith stdArgs { maxSize = 999999999999999999 }  (\(Positive x) -> testVisa x)
-
--- isAmericanExpress, isMaster, isVisa :: Integer -> Bool
-
+-- Time 2 hours
 
 -- 	(a -> b -> b) -> b -> [a] -> b
 
@@ -223,6 +226,8 @@ isPythagorean x y z = x < y && y < z && x * x + y * y == z * z
 
 sumCombinationsTill :: Int -> [(Int,Int,Int)]
 sumCombinationsTill t = [(x,y,z) | x <- [1..t], y <- [1..t], z <- [1..t], x + y + z == t]
+
+-- Time  1 hour
 
 --main :: IO ()
 --main = print([(x,y,z) | (x,y,z) <- (sumCombinationsTill 1000), isPythagorean x y z ])
@@ -237,7 +242,7 @@ getPrimes x ys | isPrime x = x : getPrimes (head nextForPrime) nextForPrime
                | otherwise = getPrimes (head next) next
                  where nextForPrime = filter (\z -> z `mod` x /= 0 ) (tail ys)
                        next = tail ys
-
+-- Time  1 hour
 --main :: IO ()
 --main = sum (filter (\x -> x < 2000000) prims)
 -- 142913828922
