@@ -132,7 +132,7 @@ checkReversalPrimes (xs) = checkPrimeReversal (primesList xs)
 
 takeSmallestPrime :: Int -> Int -> [Integer] -> Integer
 takeSmallestPrime x y ps | prime (sumPrime) = sumPrime
-					     | otherwise = takeSmallestPrime (x+1) (y+1) (tail ps)
+					     | otherwise = takeSmallestPrime (x+1) (y+1) (ps)
 						 where
 						  	sumPrime = sum ( drop x . take y $ ps)	
 -- Question: 'Do you have to test that your answer is correct? How could this be checked?'
