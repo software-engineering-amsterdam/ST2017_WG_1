@@ -176,14 +176,12 @@ accuses Arnold x = accuses Matthew x /= accuses Peter x
 accuses Carl x = not (accuses Arnold x)
 
 accusers :: Boy -> [Boy]
-accusers x = [b | b <- boys, accuses b x]
+accusers x = filter (\b -> accuses b x) boys 
 
 honest :: [Boy]
 honest = [b | b <- boys, g <- guilty, accuses b g]
 
 guilty :: [Boy]
-guilty = [b | b <- boys, length (accusers b) == 3 ]
-
-
+guilty = filter (\b -> length (accusers b) == 3) boys 
 
 
