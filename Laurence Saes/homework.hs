@@ -215,3 +215,29 @@ testVisa i = and doTest
 
 
 -- 	(a -> b -> b) -> b -> [a] -> b
+
+
+
+isPythagorean :: Int -> Int -> Int -> Bool
+isPythagorean x y z = x < y && y < z && x * x + y * y == z * z
+
+sumCombinationsTill :: Int -> [(Int,Int,Int)]
+sumCombinationsTill t = [(x,y,z) | x <- [1..t], y <- [1..t], z <- [1..t], x + y + z == t]
+
+--main :: IO ()
+--main = print([(x,y,z) | (x,y,z) <- (sumCombinationsTill 1000), isPythagorean x y z ])
+-- 31875000
+
+prims :: [Int]
+prims = getPrimes 2 [2..]
+
+getPrimes :: Int -> [Int] -> [Int]
+getPrimes _ [] = []
+getPrimes x ys | isPrime x = x : getPrimes (head nextForPrime) nextForPrime
+               | otherwise = getPrimes (head next) next
+                 where nextForPrime = filter (\z -> z `mod` x /= 0 ) (tail ys)
+                       next = tail ys
+
+--main :: IO ()
+--main = sum (filter (\x -> x < 2000000) prims)
+-- 142913828922
