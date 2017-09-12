@@ -413,12 +413,20 @@ testRandomDerangement xs = toInteger (derangements) == totalDerangementsForSize 
       - "Hello world" -> "Uryyb jbeyq"
 -}
 
-rot13 [] = []
-rot13 (x:xs) | isLower x && (ord x + 13) > 123  = chr ((ord x + 13) - 26) : rot13 xs
-             | isUpper x && (ord x + 13) > 90 = chr ((ord x + 13) - 26) : rot13 xs
-             | isLower x && (ord x + 13) > 96 && (ord x + 13) < 123 = chr (ord x + 13)  : rot13 xs
-             | isUpper x && (ord x + 13) > 65 && (ord x + 13) < 90  = chr (ord x + 13) : rot13 xs
-             | otherwise = x : rot13 xs
+rotate :: Int -> Char -> Char
+rotate n c  | isLower c && rotatedOrd > oz = chr((rotatedOrd `mod` oz) + 96)
+            | isUpper c && rotatedOrd > oZ = chr((rotatedOrd `mod` oZ) + 64)
+            | isAlpha c = chr(rotatedOrd)
+            | otherwise = c
+            where
+              rotatedOrd = ord c + n
+              oz = ord 'z'
+              oZ = ord 'Z'
+              
+
+rot13 :: [Char] -> [Char]
+rot13 xs = map (rotate 13) xs
+
 checkRot13 xs = xs == rot13(rot13 xs)
 -- quickCheck checkRot13
 
