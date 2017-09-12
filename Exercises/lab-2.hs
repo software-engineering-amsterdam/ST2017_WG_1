@@ -195,7 +195,7 @@ generatePropsI fai = do fa <- fai
 
 
 
--- Exercise 2. 
+-- Exercise 2.
 -- 2,5 hours
 
 {-
@@ -242,15 +242,15 @@ To test the correctness of the program, we have devised a number of cases of whi
 assign to the right type of triangles. For example: A triangle with sides such as (2,2,2) needs to be assigned to
 the type 'Equilateral' and a triangle with sides such as (3,4,4) needs to be assigned to the type 'Isosceles'. There are also
 a number of exceptional cases which do need to be handled. The program could for example have an input which defines one or more
-sides of a triangle as a negative number. In this case the program needs to correctly state that the input does not result in a 
+sides of a triangle as a negative number. In this case the program needs to correctly state that the input does not result in a
 triangle. -}
 
 triangleTest:: Bool
 triangleTest = all (\(a,b,c,shape) -> triangle a b c == shape) testCases
 
-testCases = [(2,2,2, Equilateral), 
-             (3,4,4, Isosceles), 
-             (4,3,4, Isosceles), 
+testCases = [(2,2,2, Equilateral),
+             (3,4,4, Isosceles),
+             (4,3,4, Isosceles),
              (4,4,3, Isosceles),
              (3,4,5, Rectangular),
              (1,1,2, NoTriangle),
@@ -313,7 +313,7 @@ property3 - property4
 property2
 -}
 
--- Exercise 4 
+-- Exercise 4
 -- time 1 hour
 
 isPermutation :: (Ord a) => [a] -> [a] -> Bool
@@ -348,7 +348,7 @@ quickCheck (\(Positive x) -> isAllNon2PermutationTest x)
 
 -- When you can assume that there are no duplicates, then there are much less elements to test
 
--- Exercise 5 
+-- Exercise 5
 -- Time 3 hours
 
 isNoSameIndexValues :: (Eq a) => [a] -> [a] -> Bool
@@ -409,19 +409,25 @@ testRandomDerangement xs = toInteger (derangements) == totalDerangementsForSize 
     further down the alphabeth. When it reaches the end of the alphabeth
     it "wraps around".
 
-    Exmaples: 
+    Exmaples:
       - "Hello world" -> "Uryyb jbeyq"
 -}
 
 rot13 [] = []
-rot13 (x:xs) | isLower x && (ord x + 13) > 123  = chr ((ord x + 13) - 26) : rot13 xs
-             | isUpper x && (ord x + 13) > 90 = chr ((ord x + 13) - 26) : rot13 xs
+rot13 (x:xs) | isLower x && (ord x + 13) >= 122  = chr ((ord x + 13) - 26) : rot13 xs
+             | isUpper x && (ord x + 13) >= 90 = chr ((ord x + 13) - 26) : rot13 xs
              | isLower x && (ord x + 13) > 96 && (ord x + 13) < 123 = chr (ord x + 13)  : rot13 xs
-             | isUpper x && (ord x + 13) > 65 && (ord x + 13) < 90  = chr (ord x + 13) : rot13 xs
+             | isUpper x && (ord x + 13) > 64 && (ord x + 13) < 91  = chr (ord x + 13) : rot13 xs
              | otherwise = x : rot13 xs
-checkRot13 xs = xs == rot13(rot13 xs)
--- quickCheck checkRot13
+checkRot13 xs = rot13(rot13 xs)
 
+-- quickCheck checkRot13
+rot13Test :: Bool
+rot13Test = all ( \(value) -> checkRot13 value == value) rot13Cases
+
+rot13Cases = [("Hello world"),
+             ("345345"),
+             ("!#$@#$")]
 
 -- Exercise 7
 -- Time 3 hours
@@ -443,9 +449,14 @@ check :: [Char] -> Bool
 check iban = (read(convert iban) :: Integer) `mod` 97 == 1
 
 -- quickCheck
+ibanTest:: Bool
+ibanTest = all ( \(iban,value) -> check iban == value) ibanCases
 
-
-
+ibanCases = [("SE35 5000 0000 0549 1000 0003", True),
+             ("CH93 0076 2011 6238 5295 7", True),
+             ("TN59 1000 6035 1835 9847 8831", True),
+             ("TR33 0006 1005 1978 6457 8413 26", True),
+             ("AE07 0331 2345 6789 0123 456", True)]
 
 -- Bonus:
 -- 1 Multiples of 3 and 5 time 20 minutes
