@@ -50,8 +50,8 @@ countQuartiles ns = do
 -}
 
 rotate :: Int -> Char -> Char
-rotate n c  | isLower c && rotatedOrd >= oz = chr((rotatedOrd `mod` oz) + 96)
-            | isUpper c && rotatedOrd >= oZ = chr((rotatedOrd `mod` oZ) + 64)
+rotate n c  | isLower c && rotatedOrd > oz = chr((rotatedOrd `mod` oz) + 96)
+            | isUpper c && rotatedOrd > oZ = chr((rotatedOrd `mod` oZ) + 64)
             | isAlpha c = chr(rotatedOrd)
             | otherwise = c
             where
