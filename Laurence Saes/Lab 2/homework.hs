@@ -239,6 +239,7 @@ isSameLength :: [a] -> [a] -> Bool
 isSameLength xs ys = length xs == length ys
 
 isDerangement :: (Ord a) => [a] -> [a] -> Bool
+isDerangement [] [] = False
 isDerangement xs ys = sameLenth && notSameIndexes && permutation
                       where sameLenth = isSameLength xs ys
                             notSameIndexes = isNoSameIndexValues xs ys
@@ -256,22 +257,32 @@ propertyNoSameIndexValues xs ys = isDerangement xs ys --> isNoSameIndexValues xs
 propertyisSameLength :: (Ord a) => [a] -> [a] -> Bool
 propertyisSameLength xs ys = isDerangement xs ys --> isDerangement xs ys
 
-totalDerangementsForSize :: Int -> Int
-totalDerangementsForSize x = 1 -- TODO HELP
+factorial:: Integer -> Integer
+factorial 0 = 1
+factorial n = n * factorial (n - 1)
 
-testRandomDerangement :: (Ord a) => [a] -> Bool
-testRandomDerangement xs = derangements == totalDerangementsForSize (length xs)
+-- Source http://oeis.org/wiki/Number_of_derangements
+derSum :: Integer -> Float
+derSum 1 = 0
+derSum n = sum( map(\k -> ((-1)^(k) / fromIntegral((factorial k)))) [2..n])
+
+-- Source http://oeis.org/wiki/Number_of_derangements
+totalDerangementsForSize :: Integer -> Integer
+totalDerangementsForSize n = round (fromIntegral (factorial n) * (derSum n))
+
+testRandomDerangement :: [Int] -> Bool
+testRandomDerangement xs = toInteger (derangements) == totalDerangementsForSize (toInteger (length xs))
                            where derangeList = map (\ys -> isDerangement xs ys) (permutations xs)
                                  derangements = length (filter (==True) derangeList)
 
 -- quickCheck propertyPermutation
 -- quickCheck propertyNoSameIndexValues
 -- quickCheck propertyisSameLength
+-- quickCheck testRandomDerangement
+
 
 tpro :: Int -> Bool -> Int
 tpro x f = length( filter (==f) (map (\ys -> isDerangement [1..x] ys) (permutations [1..x])))
-
-
 
 
 
