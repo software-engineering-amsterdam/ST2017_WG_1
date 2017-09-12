@@ -222,10 +222,42 @@ triangle a b c | not isTri = NoTriangle
 -- triangle 3 4 5
 -- Rectangular
 
--- Exercise 3 Time 3 hours
+-- Exercise 4 time 1 hour
 
 isPermutation :: (Ord a) => [a] -> [a] -> Bool
 isPermutation xs ys = sort xs == sort ys
+
+testPermutations :: Bool
+testPermutations = all id correct && all id inCorrect
+                    where correct = map ( \x -> isPermutation (fst x) (snd x) ) [([1,2,3],[3,2,1]), ([1,2,3],[2,3,1]), ([1,2,3],[1,3,2])]
+                          inCorrect = map ( \x -> not (isPermutation (fst x) (snd x)) ) [([1,2,3],[3,3,1]), ([1,2,3],[1,3,1]), ([1,2,3],[1,2,1])]
+
+noNonEqualSize :: Int -> Bool
+noNonEqualSize x = isPermutation [x] [] == False && isPermutation [] [x] == False
+
+isAllPermutationTest :: Int -> Bool
+isAllPermutationTest x = all id (map ( \a -> isPermutation a [0..x]) (permutations [0..x]))
+
+isAllNonPermutationTest :: Int -> Bool
+isAllNonPermutationTest x = all id (map ( \a -> not (isPermutation a [0..x + 1])) (permutations [0..x]))
+
+isAllNon2PermutationTest :: Int -> Bool
+isAllNon2PermutationTest x = all id (map ( \a -> not (isPermutation a [1..x + 1])) (permutations [0..x]))
+
+
+{-
+Tests:
+quickCheck noNonEqualSize
+quickCheck (\(Positive x) -> isAllPermutationTest x)
+quickCheck (\(Positive x) -> isAllNonPermutationTest x)
+quickCheck (\(Positive x) -> isAllNon2PermutationTest x)
+-}
+
+
+
+-- When you can assume that there are no duplicates, then there are much less elements to test
+
+-- Exercise 5 Time 3 hours
 
 isNoSameIndexValues :: (Eq a) => [a] -> [a] -> Bool
 isNoSameIndexValues xs ys = all id (zipWith (\x y -> x /= y) xs ys)
@@ -276,6 +308,7 @@ testRandomDerangement xs = toInteger (derangements) == totalDerangementsForSize 
 -- quickCheck testRandomDerangement
 -- We calculate how many derangement there have to be on a permutation and validate this
 
+-- Bonus:
 -- 1 Multiples of 3 and 5 time 20 minutes
 -- sum (multiple [0..999])
 -- 233168
