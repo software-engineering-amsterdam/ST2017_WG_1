@@ -54,9 +54,9 @@ triangle x y z | x == y && y == z && x == z = Equilateral
 
 ---------- ROT13 ----------
 rot13 [] = []
-rot13 (x:xs) | isLower x && (ord x + 13) > 122  = chr ((ord x + 13) - 26) : rot13 xs
+rot13 (x:xs) | isLower x && (ord x + 13) > 123  = chr ((ord x + 13) - 26) : rot13 xs
              | isUpper x && (ord x + 13) > 90 = chr ((ord x + 13) - 26) : rot13 xs
-             | isLower x && (ord x + 13) > 96 && (ord x + 13) < 122 = chr (ord x + 13)  : rot13 xs
+             | isLower x && (ord x + 13) > 96 && (ord x + 13) < 123 = chr (ord x + 13)  : rot13 xs
              | isUpper x && (ord x + 13) > 65 && (ord x + 13) < 90  = chr (ord x + 13) : rot13 xs
              | otherwise = x : rot13 xs
 checkRot13 xs = xs == rot13(rot13 xs)
