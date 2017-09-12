@@ -198,7 +198,7 @@ isVisa x = longEnought && startCheck && luhn x
 generateCreditCardNumbers :: Int -> Int -> [Int]
 generateCreditCardNumbers i l | inputLength == l - 1 = map (i*10+) [0..9]
                               | inputLength >= l = generateCreditCardNumbers (i `div` 10) l
-                              | inputLength < l = generateCreditCardNumbers (i*10) l
+                              | inputLength < l = generdfateCreditCardNumbers (i*10) l
                                 where inputLength = length (show i)
 
 -- Test if one in each group is valid
