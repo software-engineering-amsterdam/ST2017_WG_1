@@ -169,21 +169,16 @@ generatePropsI :: IO [Float] -> IO (Int,Int,Int,Int)
 generatePropsI fai = do fa <- fai
                         return (generateProps fa)
 
+--  TIme 4 hours
+
 -- generatePropsI (probs 10000)
 -- (2514,2584,2535,2367)
 -- The distribution is very close. 25,1% - 25.84% - 25.35% - 23.67%
--- In the last slot it will 123 times
 
--- statistically significant
--- It should have an exqual density.
--- To disprove that the deferenince in the fractrions or significant enought that it is not
--- by accedent that they are to high.
+-- But it is not statistically significant
+-- See extrs 1 proof.png
 
--- standart deviation
--- 0.5
--- truly uniform
-
--- Exercise 2
+-- Exercise 2. 1 hour
 
 data Shape = NoTriangle | Equilateral
             | Isosceles  | Rectangular | Other deriving (Eq,Show)
@@ -227,7 +222,7 @@ triangle a b c | not isTri = NoTriangle
 -- triangle 3 4 5
 -- Rectangular
 
--- Exercise 3
+-- Exercise 3 Time 3 hours
 
 isPermutation :: (Ord a) => [a] -> [a] -> Bool
 isPermutation xs ys = sort xs == sort ys
@@ -279,15 +274,3 @@ testRandomDerangement xs = toInteger (derangements) == totalDerangementsForSize 
 -- quickCheck propertyNoSameIndexValues
 -- quickCheck propertyisSameLength
 -- quickCheck testRandomDerangement
-
-
-tpro :: Int -> Bool -> Int
-tpro x f = length( filter (==f) (map (\ys -> isDerangement [1..x] ys) (permutations [1..x])))
-
-
-
--- Zip the lists. drop while not equal and check if empty list
--- Then foldr over list one
-
--- No element in the lists can be the same on the same index
--- It has to be a permutation of eachother
