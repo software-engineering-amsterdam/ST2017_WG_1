@@ -96,13 +96,45 @@ testCases = [(2,2,2, Equilateral),
 
 {-a: Implement all properties from the Exercise 3 from Workshop 2 as Haskell functions of type Int -> Bool. Consider a small domain like [(−10)..10][(−10)..10].} -}
 
-stronger, weaker :: [a] -> (a -> Bool) -> (a -> Bool) -> Bool
-stronger xs p q = forall xs (\ x -> p x --> q x)
-weaker   xs p q = stronger xs q p
-
-property1, property2, property3, property4 :: Int -> Bool
+property1, property2, property3 :: Int -> Bool
 property1 x = even x && x > 3
 property2 x = even x || x > 3
 property3 x = (even x && x > 3) || even x
-property4 x = even
+
+-- 1
+length (filter (==True) (map property1 [(-10)..10]))
+4
+length (filter (==True) (map even [(-10)..10]))
+11
+
+-- So property1 is stronger
+
+-- 2
+length (filter (==True) (map even [(-10)..10]))
+11
+
+length (filter (==True) (map property2 [(-10)..10]))
+14
+
+-- So even is stronger
+
+-- 3
+length (filter (==True) (map property3 [(-10)..10]))
+11
+
+length (filter (==True) (map even [(-10)..10]))
+11
+
+-- They have the same strength. So both are stronger
+
+-- 4
+length (filter (==True) (map even [(-10)..10]))
+11
+
+length (filter (==True) (map property3 [(-10)..10]))
+11
+
+-- They have the same strength. So both are stronger
+
+
 
