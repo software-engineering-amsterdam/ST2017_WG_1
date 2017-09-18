@@ -321,7 +321,7 @@ equiv f g = ft && gt || not ft && not gt
 
 -- These defenitions are correct
 
--- Exercise 3 Time 2 hours
+-- Exercise 3 Time 3 hours
 dsjToCnj :: Form -> Form -> Form
 dsjToCnj (Cnj a) (Cnj b) = Cnj [ Dsj ([subA,subB]) | subA <- da, subB <- db ]
                             where da = map convertToCnf a
@@ -399,3 +399,38 @@ form33 = (Dsj [Cnj [Prop 1, Prop 2], Cnj [Prop 3, Prop 4]])
 -- *(+(1 3) +(1 4) +(2 3) +(2 4))
 
 -- Exercise 4
+
+-- Properties: arrowfree
+
+onlyNegAndNoneNegProperties :: Form -> Bool
+onlyNegAndNoneNegProperties (Prop _) = True
+onlyNegAndNoneNegProperties (Neg (Prop a)) = True
+onlyNegAndNoneNegProperties (Neg _) = False
+onlyNegAndNoneNegProperties (Cnj fs) = all onlyNegAndNoneNegProperties fs
+onlyNegAndNoneNegProperties (Dsj fs) = all onlyNegAndNoneNegProperties fs
+onlyNegAndNoneNegProperties (Impl fs gs) = onlyNegAndNoneNegProperties fs && onlyNegAndNoneNegProperties gs
+onlyNegAndNoneNegProperties (Equiv fs gs) = onlyNegAndNoneNegProperties fs && onlyNegAndNoneNegProperties gs
+
+-- onlyNegAndNoneNegProperties (convertToCnf form33)
+-- True
+
+isSimpleProperty :: Form -> Bool
+isSimpleProperty (Prop _) = True
+isSimpleProperty (Neg (Prop a)) = True
+isSimpleProperty (Dsj fs) = True
+isSimpleProperty (Neg _) = False
+isSimpleProperty (Cnj fs) = False
+isSimpleProperty (Impl fs gs) = False
+isSimpleProperty (Equiv fs gs) = False
+
+andOnlyHasSimpleProperties :: Form -> Bool
+andOnlyHasSimpleProperties (Prop _) = True
+andOnlyHasSimpleProperties (Neg (Prop a)) = True
+andOnlyHasSimpleProperties (Neg _) = False
+andOnlyHasSimpleProperties (Cnj fs) = all isSimpleProperty fs
+andOnlyHasSimpleProperties (Dsj fs) = all andOnlyHasSimpleProperties fs
+andOnlyHasSimpleProperties (Impl fs gs) = andOnlyHasSimpleProperties fs && andOnlyHasSimpleProperties gs
+andOnlyHasSimpleProperties (Equiv fs gs) = andOnlyHasSimpleProperties fs && andOnlyHasSimpleProperties gs
+
+-- andOnlyHasSimpleProperties (convertToCnf form33)
+-- True
