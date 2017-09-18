@@ -263,22 +263,25 @@ satisfiable f = any (\ v -> evl v f) (allVals f)
 
 -- Exercise 1
 
+eFormF = (Cnj [(Neg (Prop 1)),(Prop 1)])
+eFormT = (Dsj [(Neg (Prop 1)),(Prop 1)])
+
 contradiction :: Form -> Bool
 contradiction = not . satisfiable
 
--- contradiction (Cnj [(Neg (Prop 1)),(Prop 1)])
+-- contradiction eFormF
 -- True. This is indeed a contradiction
 
--- contradiction (Dsj [(Neg (Prop 1)),(Prop 1)])
+-- contradiction eFormT
 -- False. It is indeed not a contradiction
 
 tautology :: Form -> Bool
 tautology f = all (\ v -> evl v f) (allVals f)
 
--- tautology (Dsj [(Neg (Prop 1)),(Prop 1)])
+-- tautology eFormT
 -- True. This is indeed an tautology
 
--- tautology (Cnj [(Neg (Prop 1)),(Prop 1)])
+-- tautology eFormT
 -- False. This is indeed an tautology
 
 entails :: Form -> Form -> Bool
@@ -286,16 +289,16 @@ entails g f = not gt || ft
               where ft = tautology f
                     gt = tautology g
 
--- entails (Cnj [(Neg (Prop 1)),(Prop 1)]) (Cnj [(Neg (Prop 1)),(Prop 1)])
+-- entails eFormF eFormF
 -- False |= False = True. This is indeed a property of entails
 
--- entails (Dsj [(Neg (Prop 1)),(Prop 1)]) (Dsj [(Neg (Prop 1)),(Prop 1)])
+-- entails eFormT eFormT
 -- True |= True = True. This is indeed a property of entails
 
--- entails (Dsj [(Neg (Prop 1)),(Prop 1)]) (Cnj [(Neg (Prop 1)),(Prop 1)])
+-- entails eFormT eFormF
 -- True |= False = False. This is indeed a property of entails
 
--- entails (Cnj [(Neg (Prop 1)),(Prop 1)]) (Dsj [(Neg (Prop 1)),(Prop 1)])
+-- entails eFormF eFormT
 -- False |= True = True. This is indeed a property of entails
 
 -- These defenitions are correct
@@ -304,21 +307,21 @@ equiv :: Form -> Form -> Bool
 equiv f g = ft && gt || not ft && not gt
               where ft = tautology f
                     gt = tautology g
--- equiv (Cnj [(Neg (Prop 1)),(Prop 1)]) (Cnj [(Neg (Prop 1)),(Prop 1)])
+-- equiv eFormF eFormF
 -- False <-> False = True. This is indeed a property of equivalence relation
 
--- equiv (Dsj [(Neg (Prop 1)),(Prop 1)]) (Dsj [(Neg (Prop 1)),(Prop 1)])
+-- equiv eFormT eFormT
 -- True <-> True = True. This is indeed a property of equivalence relation
 
--- equiv (Dsj [(Neg (Prop 1)),(Prop 1)]) (Cnj [(Neg (Prop 1)),(Prop 1)])
+-- equiv eFormT eFormF
 -- True <-> False = False. This is indeed a property of equivalence relation
 
--- equiv (Cnj [(Neg (Prop 1)),(Prop 1)]) (Dsj [(Neg (Prop 1)),(Prop 1)])
+-- equiv eFormF eFormT
 -- False <-> True = False. This is indeed a property of equivalence relation
 
 -- These defenitions are correct
 
--- Exercise 3
+-- Exercise 3 Time 2 hours
 dsjToCnj :: Form -> Form -> Form
 dsjToCnj (Cnj a) (Cnj b) = Cnj [ Dsj ([subA,subB]) | subA <- da, subB <- db ]
                             where da = map convertToCnf a
@@ -370,9 +373,29 @@ convertToCnf (Impl a b) = convertToCnf (Dsj [Neg (convertToCnf a), (convertToCnf
 convertToCnf (Equiv a b) = convertToCnf (Dsj [Cnj [da,db], Cnj [Neg da, Neg db]])
                               where da = convertToCnf a
                                     db = convertToCnf b
-
 -- A property and a negotion with a property is allowed
 -- Negations with a negation will cancle eachother out
 -- Negation on a conjunctions will distribute over all the sub expressions
 -- Negation on a disjunction will distribute over all the sub expressions
 -- An implication and equalivinze will be converted to a disjunction
+
+-- Tests:
+form31 = (Impl (Prop 1) (Neg (Dsj [Prop 1, Prop 2, Prop 3])))
+-- (1==>-+(1 2 3))
+
+-- convertToCnf form31
+-- *(+(-1 -3) +(-1 -1) +(-1 -2))
+
+form32 = (Cnj [Prop 1, Prop 4, Cnj [Prop 2, Prop 3]])
+-- *(1 4 *(2 3))
+
+-- convertToCnf form32
+-- *(1 4 2 3)
+
+form33 = (Dsj [Cnj [Prop 1, Prop 2], Cnj [Prop 3, Prop 4]])
+-- +(*(1 2) *(3 4))
+
+-- convertToCnf form33
+-- *(+(1 3) +(1 4) +(2 3) +(2 4))
+
+-- Exercise 4
