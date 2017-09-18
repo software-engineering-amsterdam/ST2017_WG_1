@@ -400,7 +400,14 @@ form33 = (Dsj [Cnj [Prop 1, Prop 2], Cnj [Prop 3, Prop 4]])
 
 -- Exercise 4
 
--- Properties: arrowfree
+form41 = (Dsj [Cnj [Prop 1, Dsj [Prop 1, Prop 2, Cnj [Prop 1, Prop 2, Neg (Prop 1)]]], Cnj [Prop 3, Prop 4]])
+
+isArrowFree :: Form -> Bool
+isArrowFree f = f == arrowfree f
+
+-- Properties: arrowfree. The form cannot contain arrow
+-- isArrowFree (convertToCnf form41)
+-- True
 
 onlyNegAndNoneNegProperties :: Form -> Bool
 onlyNegAndNoneNegProperties (Prop _) = True
@@ -411,13 +418,14 @@ onlyNegAndNoneNegProperties (Dsj fs) = all onlyNegAndNoneNegProperties fs
 onlyNegAndNoneNegProperties (Impl fs gs) = onlyNegAndNoneNegProperties fs && onlyNegAndNoneNegProperties gs
 onlyNegAndNoneNegProperties (Equiv fs gs) = onlyNegAndNoneNegProperties fs && onlyNegAndNoneNegProperties gs
 
--- onlyNegAndNoneNegProperties (convertToCnf form33)
+-- All the negs can only contain properties
+-- onlyNegAndNoneNegProperties (convertToCnf form41)
 -- True
 
 isSimpleProperty :: Form -> Bool
 isSimpleProperty (Prop _) = True
 isSimpleProperty (Neg (Prop a)) = True
-isSimpleProperty (Dsj fs) = True
+isSimpleProperty (Dsj fs) = all isSimpleProperty fs
 isSimpleProperty (Neg _) = False
 isSimpleProperty (Cnj fs) = False
 isSimpleProperty (Impl fs gs) = False
@@ -429,8 +437,15 @@ andOnlyHasSimpleProperties (Neg (Prop a)) = True
 andOnlyHasSimpleProperties (Neg _) = False
 andOnlyHasSimpleProperties (Cnj fs) = all isSimpleProperty fs
 andOnlyHasSimpleProperties (Dsj fs) = all andOnlyHasSimpleProperties fs
-andOnlyHasSimpleProperties (Impl fs gs) = andOnlyHasSimpleProperties fs && andOnlyHasSimpleProperties gs
-andOnlyHasSimpleProperties (Equiv fs gs) = andOnlyHasSimpleProperties fs && andOnlyHasSimpleProperties gs
+andOnlyHasSimpleProperties (Impl fs gs) = False
+andOnlyHasSimpleProperties (Equiv fs gs) = False
 
--- andOnlyHasSimpleProperties (convertToCnf form33)
+form42 = Cnj [Prop 1, Cnj [Prop 1, Cnj [Prop 1, Prop 1]]]
+
+-- ERROR: cnjToCnj (Prop 1) (Cnj [Prop 1, Cnj [Prop 1, Prop 1]])
+-- *(1 1 *(1 1))
+-- cnjToCnj (Prop 1) (Cnj [Prop 1, Prop 1, Prop 1]])
+
+-- All the cnj can only contain disjunctions. And all the disjunctions can only contain properties and negation for properties
+-- andOnlyHasSimpleProperties (convertToCnf form42)
 -- True
