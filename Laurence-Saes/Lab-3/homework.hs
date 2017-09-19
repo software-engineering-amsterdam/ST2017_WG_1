@@ -507,17 +507,6 @@ tree' n | n>0 =
 -- liftM promotes to a monad
 formGenerator :: Int -> Gen Form
 formGenerator 0 = liftM Prop arbitrary
-formGenerator n | n>0 = do rand <- randomRIO (2,4)
-                           subItems <- formGenerator (n `div` 2)
-                           element <- oneof [liftM Prop arbitrary]
-                           return element{-},
-                                         liftM Neg subItems,
-                                         liftM Cnj (vectorOf rand subItems),
-                                         liftM Dsj (vectorOf rand subItems),
-                                         liftM2 Impl subItems subItems,
-                                         liftM2 Equiv subItems subItems]-}
-                          --return element
-{-
 formGenerator n | n>0 = oneof [liftM Prop arbitrary,
                                liftM Neg subItems,
                                liftM Cnj (vectorOf 4 subItems),
@@ -525,7 +514,7 @@ formGenerator n | n>0 = oneof [liftM Prop arbitrary,
                                liftM2 Impl subItems subItems,
                                liftM2 Equiv subItems subItems]
                           where subItems = formGenerator (n `div` 2)
--}
+
 doCheck :: Form -> Bool
 doCheck f = hasNameTruthTable f convertedForm &&
             andOnlyHasSimpleProperties convertedForm &&
