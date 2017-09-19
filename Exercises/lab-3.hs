@@ -323,6 +323,17 @@ equiv f g = ft && gt || not ft && not gt
 -- These defenitions are correct
 
 --------------------------- Exercise 2 (1 hour) ---------------------------
+{-
+We created a generator that randomly generates Forms by combining and nesting them. 
+These Forms are converted into strings and are then passed in to the parse function. 
+We then check if the output meets the following conditions that indicate it returned 
+successfully: array length must be of length 1 and the string element must be equal 
+to the original string created by the generator. 
+
+
+There were no errors during testing of parse. It works with both "single" and multi-level 
+nested Forms of conjunction, disjunction, implication, negation and equivalent.
+-}
 
 parseTest :: Form -> Bool
 parseTest f = length parseRep == 1 && show (head parseRep) == show f
@@ -330,7 +341,7 @@ parseTest f = length parseRep == 1 && show (head parseRep) == show f
             parseRep = (parse stringRep)
 -- quickCheckWith stdArgs {maxSize=8} $ forAll (sized formGenerator) parseTest
 
----------------------------- Exercise 3 (4 hours) --------------------------
+---------------------------- Exercise 3 (5 hours) --------------------------
 
 -- Will merge all cnj 's inside each other
 mergeCnj :: Form -> Form
@@ -423,6 +434,7 @@ form33 = (Dsj [Cnj [Prop 1, Prop 2], Cnj [Prop 3, Prop 4]])
 --------------------------- Exercise 4 (4 hours) ---------------------------
 {-
   For this exercise we choose Laurence's solution which was consiser and generated more exhaustive tests.
+  We used both manual and quicktest for testing Form to CNF converter.
 -}
 
 form41 = (Dsj [Cnj [Prop 1, Dsj [Prop 1, Prop 2, Cnj [Prop 1, Prop 2, Neg (Prop 1)]]], Cnj [Prop 3, Prop 4]])
@@ -515,6 +527,8 @@ tree' n | n>0 =
   where subtree = tree' (n `div` 2)
 -}
 -- liftM promotes to a monad
+
+-- Use form generator for QuickCheck test cases
 formGenerator :: Int -> Gen Form
 formGenerator 0 = liftM Prop arbitrary
 formGenerator n | n>0 = oneof [liftM Prop arbitrary,
