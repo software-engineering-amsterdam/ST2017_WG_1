@@ -547,5 +547,61 @@ cnf2cls (Cnj a) = concat (map cnf2cls a)
 cnf2cls (Dsj []) = []
 cnf2cls (Dsj a) = [concat ( concat ( map cnf2cls a ))]
 
+-- Count the properies in the clause
+countPropertiesInClause :: Clauses -> Int
+countPropertiesInClause c = length (concat (c))
+
+-- Count the disjunctions in a clause
+countPartsInClause :: Clauses -> Int
+countPartsInClause c = length (c)
+
+-- Count the properties in a form
+counPropertiesInForm :: Form -> Int
+counPropertiesInForm (Prop a) = 1
+counPropertiesInForm (Neg (Prop a)) = 1
+counPropertiesInForm (Cnj a) = sum (map counPropertiesInForm a)
+counPropertiesInForm (Dsj a) = sum (map counPropertiesInForm a)
+
+-- Count the parts in a form
+counPartsInForm' :: Form -> Int
+counPartsInForm' (Prop _) = 0
+counPartsInForm' (Neg _) = 0
+counPartsInForm' (Cnj a) = length a
+counPartsInForm' (Dsj a) = sum (map counPartsInForm' a)
+
+counPartsInForm :: Form -> Int
+counPartsInForm f = case (propsInForm, subArrayCount) of (0,_) -> 0
+                                                         (_,0) -> 1
+                                                         _ -> subArrayCount
+                        where subArrayCount = counPartsInForm' f
+                              propsInForm = counPropertiesInForm f
+
+-- Determine if the property count matches when it is converted to a clause
+formToClauseHasSamePropertyCount :: Form -> Bool
+formToClauseHasSamePropertyCount f = countPartsInClause (cnf2cls cnfForm) == counPropertiesInForm cnfForm
+                                      where cnfForm = convertToCnf f
+
+
+
+-- Determine if the part count matches when it is converted to a clause
+
+{-
+ = [[]] = 0
+1 = [[1]]   = 1
+1 v 2 = [[1,2]]    = 1
+1 ^ 2 = [[1],[2]]  = 2                   V
+1 ^ 2 ^ (3 v 4) = [[1],[2],[3,4]]  = 3   V
+-}
+
+formToClauseHasSamePartCount :: Form -> Bool
+formToClauseHasSamePartCount f = countPartsInClause (cnf2cls cnfForm) == counPartsInForm cnfForm
+                                      where cnfForm = convertToCnf f
+
+-- Test from the slides
 form51 = Cnj [Prop 4, Dsj [Prop 5, Neg (Prop 6)]]
 form51Test = show (cnf2cls form51) == "[[4],[5,-6]]"
+
+-- Run the tests with
+-- quickCheckWith stdArgs {maxSize=8} $ forAll (sized formGenerator) formToClauseHasSamePartCount
+-- quickCheckWith stdArgs {maxSize=8} $ forAll (sized formGenerator) formToClauseHasSamePropertyCount
+-- form51Test
