@@ -321,12 +321,27 @@ equiv f g = ft && gt || not ft && not gt
 
 -- These defenitions are correct
 
--- Exercise 3 Time 3 hours
+-- Exercise 3 Time 4 hours
+
+-- Will merge all cnj 's inside each other
+mergeCnj :: Form -> Form
+mergeCnj (Cnj []) = (Cnj [])
+mergeCnj (Cnj (x:xs)) = case x of (Cnj ys) -> mergeCnj (Cnj (xs ++ ys))
+                                  otherwise -> Cnj (x : next)
+                                                where (Cnj next) = mergeCnj (Cnj xs)
+mergeCnj a = a
+
+
+-- Converts disjunction to conjunction:
+-- A disjunction of 2 conjunctions are distributed
+-- A non disjunction is distrubuted over the conjunction
+-- Two non disjunctions will keep the same
+
 dsjToCnj :: Form -> Form -> Form
-dsjToCnj (Cnj a) (Cnj b) = Cnj [ Dsj ([subA,subB]) | subA <- da, subB <- db ]
+dsjToCnj (Cnj a) (Cnj b) = (Cnj [ Dsj ([subA,subB]) | subA <- da, subB <- db ])
                             where da = map convertToCnf a
                                   db = map convertToCnf b
-dsjToCnj subA (Cnj b) = Cnj [ Dsj ([da,subB]) | subB <- db ]
+dsjToCnj subA (Cnj b) = (Cnj [ Dsj ([da,subB]) | subB <- db ])
                             where db = map convertToCnf b
                                   da = convertToCnf subA
 dsjToCnj (Cnj a) subB = dsjToCnj subB (Cnj a)
@@ -334,26 +349,26 @@ dsjToCnj subA subB = Dsj [db, da]
                             where db = convertToCnf subB
                                   da = convertToCnf subA
 
--- Converts disjunction to conjunction:
--- A disjunction of 2 conjunctions are distributed
--- A non disjunction is distrubuted over the conjunction
--- Two non disjunctions will keep the same
-
-cnjToCnj :: Form -> Form -> Form
-cnjToCnj (Cnj a) (Cnj b) = Cnj (concat [normalCnjA,normalCnjB])
-                            where normalCnjA = map convertToCnf a
-                                  normalCnjB = map convertToCnf b
-cnjToCnj a (Cnj b) = Cnj (normalCnjA : normalCnjB)
-                            where normalCnjA = convertToCnf a
-                                  normalCnjB = map convertToCnf b
-cnjToCnj (Cnj a) b = cnjToCnj b (Cnj a)
-cnjToCnj a b = Cnj [normalCnjA,normalCnjB]
-                            where normalCnjA = convertToCnf a
-                                  normalCnjB = convertToCnf b
-
 -- Two conjunctions will be concatenated
 -- One non conjections with a conjections will be appended
 -- Two non conjunctions will heep the same
+cnjToCnj :: Form -> Form -> Form
+cnjToCnj (Cnj a) (Cnj b) = mergeCnj (Cnj (concat [normalCnjA,normalCnjB]))
+                            where normalCnjA = map (convertToCnf) a
+                                  normalCnjB = map (convertToCnf) b
+cnjToCnj a (Cnj b) = mergeCnj (Cnj (normalCnjA : normalCnjB))
+                            where normalCnjA = convertToCnf a
+                                  normalCnjB = map (mergeCnj . convertToCnf) b
+cnjToCnj (Cnj a) b = cnjToCnj b (Cnj a)
+cnjToCnj a b = mergeCnj (Cnj [normalCnjA,normalCnjB])
+                            where normalCnjA = convertToCnf a
+                                  normalCnjB = convertToCnf b
+
+-- A property and a negotion with a property is allowed
+-- Negations with a negation will cancle eachother out
+-- Negation on a conjunctions will distribute over all the sub expressions
+-- Negation on a disjunction will distribute over all the sub expressions
+-- An implication and equalivinze will be converted to a disjunction
 
 convertToCnf :: Form -> Form
 convertToCnf (Prop a) = Prop a
@@ -368,16 +383,14 @@ convertToCnf (Cnj (a:b:cs)) | length cs == 0 = cnjAB
 convertToCnf (Dsj [a]) = convertToCnf a
 convertToCnf (Dsj (a:b:cs)) | length cs == 0 = dsjAB
                             | otherwise = convertToCnf (Dsj (dsjAB:cs))
-                                  where dsjAB = dsjToCnj a b
+                                  where suba = convertToCnf a
+                                        subb = convertToCnf b
+                                        dsjAB = dsjToCnj suba subb
 convertToCnf (Impl a b) = convertToCnf (Dsj [Neg (convertToCnf a), (convertToCnf b)])
 convertToCnf (Equiv a b) = convertToCnf (Dsj [Cnj [da,db], Cnj [Neg da, Neg db]])
                               where da = convertToCnf a
                                     db = convertToCnf b
--- A property and a negotion with a property is allowed
--- Negations with a negation will cancle eachother out
--- Negation on a conjunctions will distribute over all the sub expressions
--- Negation on a disjunction will distribute over all the sub expressions
--- An implication and equalivinze will be converted to a disjunction
+
 
 -- Tests:
 form31 = (Impl (Prop 1) (Neg (Dsj [Prop 1, Prop 2, Prop 3])))
@@ -441,11 +454,30 @@ andOnlyHasSimpleProperties (Impl fs gs) = False
 andOnlyHasSimpleProperties (Equiv fs gs) = False
 
 form42 = Cnj [Prop 1, Cnj [Prop 1, Cnj [Prop 1, Prop 1]]]
-
--- ERROR: cnjToCnj (Prop 1) (Cnj [Prop 1, Cnj [Prop 1, Prop 1]])
--- *(1 1 *(1 1))
--- cnjToCnj (Prop 1) (Cnj [Prop 1, Prop 1, Prop 1]])
+form43 = Cnj [(Prop 1),(Cnj [Prop 1, Cnj [Prop 1, (Cnj [Prop 1, (Dsj [Prop 2, Prop 3])])]])]
 
 -- All the cnj can only contain disjunctions. And all the disjunctions can only contain properties and negation for properties
+-- andOnlyHasSimpleProperties (convertToCnf form41)
+-- True
+
 -- andOnlyHasSimpleProperties (convertToCnf form42)
+-- True
+
+-- andOnlyHasSimpleProperties (convertToCnf form43)
+-- True
+
+-- Has the same truth table as the origional
+getTable :: Form -> [Bool]
+getTable f = map (\ v -> evl v f) (allVals f)
+
+hasNameTruthTable :: Form -> Form -> Bool
+hasNameTruthTable f g = all id (zipWith (\x y -> x == y) (getTable f) (getTable g))
+
+-- hasNameTruthTable form41 (convertToCnf form41)
+-- True
+
+-- hasNameTruthTable form42 (convertToCnf form42)
+-- True
+
+-- hasNameTruthTable form43 (convertToCnf form43)
 -- True
