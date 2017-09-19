@@ -532,3 +532,20 @@ doCheck f = hasNameTruthTable f convertedForm &&
               where convertedForm = (convertToCnf f)
 
 -- quickCheckWith stdArgs {maxSize=8} $ forAll (sized formGenerator) doCheck
+
+-- Extersise 5
+--  list [[4],[5,−6]][[4],[5,−6]] represents the formula p4∧(p5∨¬p6)p4∧(p5∨¬p6).
+
+type Clause  = [Int]
+type Clauses = [Clause]
+
+cnf2cls :: Form -> Clauses
+cnf2cls (Prop a) = [[a]]
+cnf2cls (Neg (Prop a)) = [[a * (-1)]]
+cnf2cls (Cnj []) = []
+cnf2cls (Cnj a) = concat (map cnf2cls a)
+cnf2cls (Dsj []) = []
+cnf2cls (Dsj a) = [concat ( concat ( map cnf2cls a ))]
+
+form51 = Cnj [Prop 4, Dsj [Prop 5, Neg (Prop 6)]]
+form51Test = show (cnf2cls form51) == "[[4],[5,-6]]"
