@@ -378,20 +378,21 @@ convertToCnf (Neg (Prop a)) = (Neg (Prop a))
 convertToCnf (Neg (Neg a)) = convertToCnf a
 convertToCnf (Neg (Cnj a)) = convertToCnf (Dsj (map (\x -> Neg x) a))
 convertToCnf (Neg (Dsj a)) = convertToCnf (Cnj (map (\x -> Neg x) a))
+convertToCnf (Neg a) = convertToCnf (Neg (arrowfree a))
+convertToCnf (Cnj []) = (Cnj [])
 convertToCnf (Cnj [a]) = convertToCnf a
 convertToCnf (Cnj (a:b:cs)) | length cs == 0 = cnjAB
                             | otherwise = convertToCnf (Cnj (cnjAB:cs))
                                       where cnjAB = cnjToCnj a b
+convertToCnf (Dsj []) = (Dsj [])
 convertToCnf (Dsj [a]) = convertToCnf a
 convertToCnf (Dsj (a:b:cs)) | length cs == 0 = dsjAB
                             | otherwise = convertToCnf (Dsj (dsjAB:cs))
                                   where suba = convertToCnf a
                                         subb = convertToCnf b
                                         dsjAB = dsjToCnj suba subb
-convertToCnf (Impl a b) = convertToCnf (Dsj [Neg (convertToCnf a), (convertToCnf b)])
-convertToCnf (Equiv a b) = convertToCnf (Dsj [Cnj [da,db], Cnj [Neg da, Neg db]])
-                              where da = convertToCnf a
-                                    db = convertToCnf b
+convertToCnf (Impl a b) = convertToCnf (arrowfree (Impl a b))
+convertToCnf (Equiv a b) = convertToCnf (arrowfree (Equiv a b))
 
 
 -- Tests:
@@ -509,8 +510,8 @@ formGenerator :: Int -> Gen Form
 formGenerator 0 = liftM Prop arbitrary
 formGenerator n | n>0 = oneof [liftM Prop arbitrary,
                                liftM Neg subItems,
-                               liftM Cnj (vectorOf 4 subItems),
-                               liftM Dsj (vectorOf 4 subItems),
+                               liftM Cnj (vectorOf 2 subItems),
+                               liftM Dsj (vectorOf 2 subItems),
                                liftM2 Impl subItems subItems,
                                liftM2 Equiv subItems subItems]
                           where subItems = formGenerator (n `div` 2)
@@ -522,4 +523,4 @@ doCheck f = hasNameTruthTable f convertedForm &&
             isArrowFree convertedForm
               where convertedForm = (convertToCnf f)
 
-main = quickCheck $ forAll (sized formGenerator) (\x -> doCheck x)
+-- quickCheckWith stdArgs {maxSize=8} $ forAll (sized formGenerator) doCheck
