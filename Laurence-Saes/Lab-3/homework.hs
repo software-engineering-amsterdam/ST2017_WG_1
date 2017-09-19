@@ -6,6 +6,8 @@ where
 import Data.List
 import Data.Char
 import Test.QuickCheck
+import Control.Monad
+import System.Random
 
 infix 1 -->
 (-->) :: Bool -> Bool -> Bool
@@ -455,6 +457,8 @@ andOnlyHasSimpleProperties (Equiv fs gs) = False
 
 form42 = Cnj [Prop 1, Cnj [Prop 1, Cnj [Prop 1, Prop 1]]]
 form43 = Cnj [(Prop 1),(Cnj [Prop 1, Cnj [Prop 1, (Cnj [Prop 1, (Dsj [Prop 2, Prop 3])])]])]
+form44 = Impl (Cnj [Prop 1, Prop 2]) (Dsj [Prop 2, Prop 3])
+form45 = Equiv (Cnj [Prop 1, Prop 2]) (Dsj [Prop 2, Prop 3])
 
 -- All the cnj can only contain disjunctions. And all the disjunctions can only contain properties and negation for properties
 -- andOnlyHasSimpleProperties (convertToCnf form41)
@@ -464,6 +468,12 @@ form43 = Cnj [(Prop 1),(Cnj [Prop 1, Cnj [Prop 1, (Cnj [Prop 1, (Dsj [Prop 2, Pr
 -- True
 
 -- andOnlyHasSimpleProperties (convertToCnf form43)
+-- True
+
+-- andOnlyHasSimpleProperties (convertToCnf form44)
+-- True
+
+-- andOnlyHasSimpleProperties (convertToCnf form45)
 -- True
 
 -- Has the same truth table as the origional
@@ -481,3 +491,46 @@ hasNameTruthTable f g = all id (zipWith (\x y -> x == y) (getTable f) (getTable 
 
 -- hasNameTruthTable form43 (convertToCnf form43)
 -- True
+
+-- TO test, use hasNameTruthTable, andOnlyHasSimpleProperties, onlyNegAndNoneNegProperties, isArrowFree
+
+
+-- http://www.cse.chalmers.se/~rjmh/QuickCheck/manual_body.html
+{-
+tree = sized tree'
+tree' 0 = liftM Leaf arbitrary
+tree' n | n>0 =
+	oneof [liftM Leaf arbitrary,
+	       liftM2 Branch subtree subtree]
+  where subtree = tree' (n `div` 2)
+-}
+-- liftM promotes to a monad
+formGenerator :: Int -> Gen Form
+formGenerator 0 = liftM Prop arbitrary
+formGenerator n | n>0 = do rand <- randomRIO (2,4)
+                           subItems <- formGenerator (n `div` 2)
+                           element <- oneof [liftM Prop arbitrary]
+                           return element{-},
+                                         liftM Neg subItems,
+                                         liftM Cnj (vectorOf rand subItems),
+                                         liftM Dsj (vectorOf rand subItems),
+                                         liftM2 Impl subItems subItems,
+                                         liftM2 Equiv subItems subItems]-}
+                          --return element
+{-
+formGenerator n | n>0 = oneof [liftM Prop arbitrary,
+                               liftM Neg subItems,
+                               liftM Cnj (vectorOf 4 subItems),
+                               liftM Dsj (vectorOf 4 subItems),
+                               liftM2 Impl subItems subItems,
+                               liftM2 Equiv subItems subItems]
+                          where subItems = formGenerator (n `div` 2)
+-}
+doCheck :: Form -> Bool
+doCheck f = hasNameTruthTable f convertedForm &&
+            andOnlyHasSimpleProperties convertedForm &&
+            onlyNegAndNoneNegProperties convertedForm &&
+            isArrowFree convertedForm
+              where convertedForm = (convertToCnf f)
+
+main = quickCheck $ forAll (sized formGenerator) (\x -> doCheck x)
