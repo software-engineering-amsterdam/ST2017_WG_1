@@ -323,6 +323,14 @@ equiv f g = ft && gt || not ft && not gt
 
 -- These defenitions are correct
 
+-- Exercise 2 Time 1 hour
+
+parseTest :: Form -> Bool
+parseTest f = length parseRep == 1 && show (head parseRep) == show f
+      where stringRep = show f
+            parseRep = (parse stringRep)
+-- quickCheckWith stdArgs {maxSize=8} $ forAll (sized formGenerator) parseTest
+
 -- Exercise 3 Time 4 hours
 
 -- Will merge all cnj 's inside each other
