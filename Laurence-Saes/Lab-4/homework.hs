@@ -5,6 +5,9 @@ where
 
 import Test.QuickCheck
 import Data.List
+import System.Random
+import Data.Char
+import Control.Monad
 
 {-- Sets implemented as ordered lists without duplicates --}
 
@@ -77,19 +80,52 @@ unionSet (Set [])     set2  =  set2
 unionSet (Set (x:xs)) set2  =
    insertSet x (unionSet (Set xs) set2)
 
--- Exercise 2
-createTestSet :: Int -> [Set Int]
-createTestSet m = map list2set p
-                  where m = [0..m]
-                        p = permutations m
+
+-- Exercise 2 -- Time 3 hours --
+-- Creates a random Set with a min and max value for each value inside the set
+-- A maximum number of elements inside the set
+-- When it is inposible to create a set (0 till 10 and 11 items) then an empty set is returned
+createTestSet :: Int -> Int -> Int -> IO (Set Int)
+createTestSet mn mx c | mx - mn < c = do return emptySet
+                      | otherwise = do randomSet <- getRandomItems mn mx c
+                                       return (list2set randomSet)
+
+getRandomItems :: Int -> Int -> Int -> IO ([Int])
+getRandomItems _ _ 0 = do return []
+getRandomItems mn mx c = do rn <- randomRIO (mn,mx)
+                            nxt <- getRandomItems mn mx (c-1)
+                            if elem rn nxt
+                              then (getRandomItems mn mx (c))
+                              else return (rn : nxt)
+
+-- createTestSet 0 100 50
+
+-- http://www.cse.chalmers.se/~rjmh/QuickCheck/manual_body.html
+setGenerator :: Int -> Gen (Set Int)
+setGenerator 0 = do return emptySet
+setGenerator n | n>0 = do as <- arbitrary
+                          return (list2set as)
+
+-- To test the sets
+isUnique :: [Int] -> Bool
+isUnique [] = True
+isUnique [_] = True
+isUnique (x:y:zs) = x /= y && isUnique zs
 
 isSet :: (Set Int) -> Bool
-isSet (Set a) = all (\x -> isUnique x == (Just True)) a
+isSet (Set a) = isUnique a
 
---testIsSets :: Int -> Bool
---testIsSets x = all isSet (createTestSet x)
+testSet :: IO (Set Int) -> IO Bool
+testSet ist = do st <- ist
+                 return (isSet st)
 
--- quickCheckWith stdArgs {maxSize=10} $ testIsSets
+-- Normal test:
+-- testSet (createTestSet 0 1000 50)
+
+-- QuickCheck
+-- quickCheckWith stdArgs {maxSize=1000} $ forAll (sized setGenerator) isSet
+
+
 
 
 -- Exercise 9
