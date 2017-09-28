@@ -10,34 +10,6 @@ import Test.QuickCheck
 
 ---------- Lab excersise 1 ----------
 
--- probs :: Int -> IO [Float]
--- probs 0 = return []
--- probs n = do
---              p <- getStdRandom random
---              ps <- probs (n-1)
---              return (p:ps)
---
--- -- cast :: IO [Float] -> Int
--- castFirsts xs = do
---             x <- length (filter (even) xs)
---             return (x)
--- castSeconds xs = do
---             x <- xs
---             return (length (filter (< 0.50) x))
--- castThirds xs = do
---             x <- xs
---             return (length (filter (< 0.75) x))
--- castForths xs = do
---             x <- xs
---             return (length (filter (< 1.0) x))
-
-
---
--- range :: [Float] -> [Int]
--- range (x:xs) | x < 0.25 =
---              | otherwise =
-
-
 ---------- Lab excersise 2 ----------
 
 
