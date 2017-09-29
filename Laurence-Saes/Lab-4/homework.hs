@@ -125,7 +125,65 @@ testSet ist = do st <- ist
 -- QuickCheck
 -- quickCheckWith stdArgs {maxSize=1000} $ forAll (sized setGenerator) isSet
 
+-- Exercise 9 -- 2 hours --
+type Var = String
+type Env = Var -> Integer
+
+data Expr = I Integer | V Var
+          | Add Expr Expr
+          | Subtr Expr Expr
+          | Mult Expr Expr
+          deriving (Eq)
+
+instance Show Expr where
+  show (I i) = show i
+  show (V v) = show v
+  show (Add r l) = show l ++ " + " ++ show r
+  show (Subtr l r) = show l ++ " - " ++ show r
+  show (Mult l r) = show l ++ " * " ++ show r
+
+data Condition = Prp Var
+               | Eq Expr Expr
+               | Lt Expr Expr
+               | Gt Expr Expr
+               | Ng Condition
+               | Cj [Condition]
+               | Dj [Condition]
+               deriving (Eq)
+
+instance Show Condition where
+  show (Prp i) = show i
+  show (Eq r l) = show l ++ " == " ++ show r
+  show (Lt l r) = show l ++ " > " ++ show r
+  show (Gt l r) = show l ++ " < " ++ show r
+  show (Ng i) = "!" ++ show i
+  show (Cj i) = intercalate " && " (map show i)
+  show (Dj i) = intercalate " || " (map show i)
+
+data Statement = Ass Var Expr
+               | Cond Condition Statement Statement
+               | Seq [Statement]
+               | While Condition Statement
+               deriving (Eq)
+
+instance Show Statement where
+  show (Ass v e) = show v ++ " = " ++ show e
+  show (Cond c sl sr) = "if " ++ (show c) ++ " then " ++ (show sl) ++ " else " ++ (show sr)
+  show (Seq st) = intercalate ";\n" (map show st)
+  show (While c s) = "while (" ++ show c ++ ") then {\n" ++ show s ++ "\n}"
+
+fib :: Statement
+fib = Seq [Ass "x" (I 0), Ass "y" (I 1),
+           While (Gt (V "n") (I 0))
+             (Seq [Ass "z" (V "x"),
+                   Ass "x" (V "y"),
+                   Ass "y" (Add (V "z") (V "y")),
+                   Ass "n" (Subtr (V "n") (I 1))])]
 
 
-
--- Exercise 9
+{-
+  Bonus In the lecture notes, Statement is in class Show, but the show function for it is a bit clumsy. Write your own show function for imperative programs.
+  Next, write a read function, and use show and read to state some abstract test properties for how these functions should behave.
+  Next, use QuickCheck to test your implementations.
+-}
+-- Create a generator. Implement show
