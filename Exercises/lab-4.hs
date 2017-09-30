@@ -289,17 +289,15 @@ relationOneTrColResult = [(1,2),(1,3),(1,4),(2,3),(2,4),(3,4)]
 symCloTester = symClos relationOne == relationOneSymCloResult
 trCloTester = trClo relationOne == relationOneTrColResult
 
--- The symmetric closure of a rel is the union of the rel with its inverse
--- The symmetric closure is divadable by 2
-{-
-Iets zoals:
-propUnSAndIIsSymC testRel = list2set (cancat [relI, testRel]) == list2set (symL)
-                            where symL = symClos testRel
-                                  relI = inverseRel testRel
--}
+-- The symmetric closure: When (a,b) is in the Rel then (b,a) is also in the Rel
+propCheckReverse :: (Eq a, Foldable t) => t (a, a) -> Bool
+propCheckReverse rel = all (\x -> elem (swap x) rel) rel
 
 -- The intersection of two transitive relations is also transitive.
 
+-- TODO
+
+-- Test generators
 createRelationFromList :: [t] -> [(t, t)]
 createRelationFromList [] = []
 createRelationFromList [a] = []
@@ -321,6 +319,10 @@ relGenerator n | n>0 = do a <- arbitrary
                           return a
 
 -- quickCheckWith stdArgs {maxSize=1000} $ forAll (sized relGenerator) someTest
+
+testProp = createTestRel 0 200 25
+
+-- TODO do the property tests. Like in extr 3
 
 
 -- Create a random relation
