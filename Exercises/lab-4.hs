@@ -276,3 +276,4 @@ calculateChain n = 1 + calculateChain (collatzProblem n)
 
 main :: IO ()
 main = print(maximum (map (\x -> ((calculateChain x),x) ) [1..999999]))
+-- Use the compiler!
