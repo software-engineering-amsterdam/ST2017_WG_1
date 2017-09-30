@@ -130,7 +130,7 @@ testSet ist = do st <- ist
 -- quickCheckWith stdArgs {maxSize=1000} $ forAll (sized setGenerator) isSet
 
 -------------- Assignment 3 ---------------
--- time spent 2 hour
+-- time spent 4 hour
 
 
 unionSet :: (Ord a) => Set a -> Set a -> Set a
@@ -161,13 +161,103 @@ testSet4 = Set [3,4,5,6,7]
 resultDifferenceSet34 = Set [1,2,6,7]
 testDifferencecSet = differenceSet testSet3 testSet4 == resultDifferenceSet34
 
+-- Get set inverse
+getSetInverse :: (Enum a, Ord a) => Set a -> Set a
+getSetInverse (Set []) = emptySet
+getSetInverse (Set xs) = list2set ([i | i <- [min..max], elem i xs == False ])
+                            where min = minimum xs
+                                  max = maximum xs
+
+
+combindSet :: Ord t => Set t -> Set t -> Set t
+combindSet setA setB = totalSet
+                        where (Set xs) = setA
+                              (Set ys) = setB
+                              totalSet = list2set (concat [xs,ys])
+
+-- Test properties
+
+-- Manual test
+randomSetIO = createTestSet 0 1000 50
+
+-- Insersection of 2 sets is the same set
+propISameSet :: Ord a => Set a -> Bool
+propISameSet randomSet = (intersectionSet randomSet randomSet == randomSet)
+
+-- Intersection of a set inverse with the set is the empty set
+propIOIIsEmpty :: (Enum a, Ord a) => Set a -> Bool
+propIOIIsEmpty randomSet = intersectionSet (getSetInverse randomSet) randomSet == emptySet
+
+-- Union of the same set A and B is the same as the set A and B
+propSUIsSame :: Ord a => Set a -> Bool
+propSUIsSame randomSet = unionSet randomSet randomSet == randomSet
+
+-- Union of A set with the inverse of the set is all element of both sets
+propUWOIT :: (Enum t, Ord t) => Set t -> Bool
+propUWOIT randomSet = unionSet oSet randomSet == totalSet
+                      where oSet = getSetInverse randomSet
+                            (Set xs) = oSet
+                            (Set ys) = randomSet
+                            totalSet = combindSet oSet randomSet
+
+-- The diference of a set inverse is the empty set
+propDifOpIsTotal randomSet = differenceSet randomSet oSet == combindSet randomSet oSet
+                              where oSet = (getSetInverse randomSet)
+
+
+--propertyTests :: (Enum a, Ord a) => IO (Set a) -> IO ()
+propertyTests setToTest = do randomSet <- setToTest
+                             print "Insersection of 2 sets is the same set"
+                             print (propISameSet randomSet)
+                             print "Intersection of a set inverse with the set is the empty set"
+                             print (propIOIIsEmpty randomSet)
+                             print "Union of the same set A and B is the same as the set A and B"
+                             print (propSUIsSame randomSet)
+                             print "Union of A set with the inverse of the set is all element of both sets"
+                             print (propUWOIT randomSet)
+                             print "The diference of a set inverse is the empty set"
+                             print (propDifOpIsTotal randomSet)
+
+{-
+Manual test:
+  propertyTests randomSetIO
+  "Insersection of 2 sets is the same set"
+  True
+  "Intersection of a set inverse with the set is the empty set"
+  True
+  "Union of the same set A and B is the same as the set A and B"
+  True
+  "Union of A set with the inverse of the set is all element of both sets"
+  True
+  "The diference of a set inverse is the empty set"
+  True
+-}
+
+qPropertyTests :: (Enum a, Ord a) => (Set a) -> Bool
+qPropertyTests setToTest =  (propISameSet setToTest) &&
+                            (propIOIIsEmpty setToTest) &&
+                            (propSUIsSame setToTest) &&
+                            (propUWOIT setToTest) &&
+                            (propDifOpIsTotal setToTest)
+
+
+-- QuickCheck
+
+{-
+QuickCheck:
+quickCheckWith stdArgs {maxSize=1000} $ forAll (sized setGenerator) qPropertyTests
+-}
+
+
+
 -------------- Assignment 5 ---------------
 -- time spent 30 minutes
 type Rel a = [(a,a)]
 
-comb :: Rel a -> Rel a -> Rel a
+comb :: (Eq a) => Rel a -> Rel a -> Rel a
 comb [] ys = ys
-comb (x:xs) ys = x:comb ys xs
+comb (x:xs) ys = if elem x rest then rest else x:rest
+                where rest = comb ys xs
 
 symClos :: Ord a => Rel a -> Rel a
 symClos xs = comb xs swaped
@@ -199,6 +289,41 @@ relationOneTrColResult = [(1,2),(1,3),(1,4),(2,3),(2,4),(3,4)]
 symCloTester = symClos relationOne == relationOneSymCloResult
 trCloTester = trClo relationOne == relationOneTrColResult
 
+-- The symmetric closure of a rel is the union of the rel with its inverse
+-- The symmetric closure is divadable by 2
+{-
+Iets zoals:
+propUnSAndIIsSymC testRel = list2set (cancat [relI, testRel]) == list2set (symL)
+                            where symL = symClos testRel
+                                  relI = inverseRel testRel
+-}
+
+-- The intersection of two transitive relations is also transitive.
+
+createRelationFromList :: [t] -> [(t, t)]
+createRelationFromList [] = []
+createRelationFromList [a] = []
+createRelationFromList (x:y:zs) = (x,y) : createRelationFromList zs
+
+{-
+createTestRel 0 100 10
+[(6,83),(40,22),(56,96),(67,79),(92,84)]
+-}
+createTestRel :: Int -> Int -> Int -> IO [(Int, Int)]
+createTestRel mn mx c | mx - mn < c = do return []
+                      | otherwise = do randomItems <- getRandomItems mn mx c
+                                       return (createRelationFromList randomItems)
+
+-- Quick check generator
+relGenerator :: Int -> Gen [(Int, Int)]
+relGenerator 0 = do return []
+relGenerator n | n>0 = do a <- arbitrary
+                          return a
+
+-- quickCheckWith stdArgs {maxSize=1000} $ forAll (sized relGenerator) someTest
+
+
+-- Create a random relation
 
 -------------- Assignment 9 ---------------
 -- time spent 4 hours
