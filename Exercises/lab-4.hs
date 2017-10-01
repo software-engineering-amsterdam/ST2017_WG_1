@@ -360,7 +360,7 @@ testProp = createTestRel 0 200 25
 
 -- Create a random relation
 
--------------- Assignment 7 ---------------
+-------------- Assignment 8 ---------------
 
 -- Is there a difference between 
 -- the symmetric closure of the transitive closure of a relation RR 
