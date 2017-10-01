@@ -362,7 +362,6 @@ testProp2 = createTestRel 0 200 25
 
 -- Manual test
 
---propertyTests :: (Enum a, Ord a) => IO (Set a) -> IO ()
 {-
   propertyRelTests testProp1 testProp2
   "The symmetric closure: When (a,b) is in the Rel then (b,a) is also in the Rel"
