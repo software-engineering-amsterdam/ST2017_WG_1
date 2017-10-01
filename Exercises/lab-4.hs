@@ -89,18 +89,18 @@ infixl 9 !!!
 -------------- Assignment 1 ---------------
 -- Read or reread Chapter 4 of The Haskell Road, and make
 -- a list of questions on specific points that cause difficulty of understanding.
--- Time spent:     2 hours  
+-- Time spent:     2 hours
 
 {-  ### Chapter 4: Sets, Types and Lists ### -}
-{-  1.  The book states that a /= a in most cases. It then gives an example of a case 
+{-  1.  The book states that a /= a in most cases. It then gives an example of a case
         where it is useful to have sets have themselves as members. This example concerns
-        infinite streams. Are there any other cases where it is useful to have sets have 
-        themselves as member? How are these cases useful? 
+        infinite streams. Are there any other cases where it is useful to have sets have
+        themselves as member? How are these cases useful?
         (Page 125, 4.3 Haskell road to logic)
     2.  We don't get the way the translation in example 4.25 is formed. How does the book get to this
         logical form from the prevoiusly defined sets and formula?
         (Page 134, 4.4 Haskell road to logic)
-    3.  Definition 4.42 states that pairs have predefined functions fst and snd to get the first and 
+    3.  Definition 4.42 states that pairs have predefined functions fst and snd to get the first and
         second member of a pair respectively. In the case of a triple or quadruple collection of
         elements, are there also functions to get the third of fourth elements, besides functions for
         getting a specific element x.?
@@ -316,6 +316,9 @@ trCloHelper x [y] = [(x1, y2) | (x1, x2) <- x, (y1, y2) <- trClo (y), x2 == y1]
 relationOne :: Rel Int
 relationOne = [(1,2),(2,3),(3,4)]
 
+relationTwo :: Rel Int
+relationTwo = [(1,2),(3,1),(3,4)]
+
 relationOneSymCloResult = [(1,2),(2,1),(2,3),(3,2),(3,4),(4,3)]
 relationOneTrColResult = [(1,2),(1,3),(1,4),(2,3),(2,4),(3,4)]
 
@@ -327,8 +330,9 @@ propCheckReverse :: (Eq a, Foldable t) => t (a, a) -> Bool
 propCheckReverse rel = all (\x -> elem (swap x) rel) rel
 
 -- The intersection of two transitive relations is also transitive.
-
--- TODO
+propTransInt :: Ord a => Rel a -> Rel a -> Bool
+propTransInt tra trb = trClo tri == tri
+                          where tri = filter (\x -> elem x trb) tra
 
 -- Test generators
 createRelationFromList :: [t] -> [(t, t)]
@@ -353,25 +357,53 @@ relGenerator n | n>0 = do a <- arbitrary
 
 -- quickCheckWith stdArgs {maxSize=1000} $ forAll (sized relGenerator) someTest
 
-testProp = createTestRel 0 200 25
+testProp1 = createTestRel 0 200 25
+testProp2 = createTestRel 0 200 25
 
--- TODO do the property tests. Like in extr 3
+-- Manual test
 
+--propertyTests :: (Enum a, Ord a) => IO (Set a) -> IO ()
+{-
+  propertyRelTests testProp1 testProp2
+  "The symmetric closure: When (a,b) is in the Rel then (b,a) is also in the Rel"
+  True
+  "The intersection of two transitive relations is also transitive."
+  True
+-}
+propertyRelTests relAIO relBIO = do relA <- relAIO
+                                    relB <- relBIO
+                                    print "The symmetric closure: When (a,b) is in the Rel then (b,a) is also in the Rel"
+                                    print (propCheckReverse (symClos relA))
+                                    print "The intersection of two transitive relations is also transitive."
+                                    print (propTransInt (trClo relA) (trClo relB))
 
--- Create a random relation
+-- propertyRelTests testProp1 testProp2
+
+-- quickCheck test
+
+-- quickCheckWith stdArgs {maxSize=20} $ forAll (sized relGenerator) qRelPropertyTests
+
+{-
+  quickCheckWith stdArgs {maxSize=20} $ forAll (sized relGenerator) qRelPropertyTests
+  +++ OK, passed 100 tests.
+-}
+qRelPropertyTests :: Ord a => Rel a -> Rel a -> Bool
+qRelPropertyTests relToTesta relToTestb = (propCheckReverse (symClos relToTesta))  &&
+                                          (propTransInt (trClo relToTesta) (trClo relToTestb))
+
 
 -------------- Assignment 8 ---------------
 
--- Is there a difference between 
--- the symmetric closure of the transitive closure of a relation RR 
+-- Is there a difference between
+-- the symmetric closure of the transitive closure of a relation RR
 -- and the transitive closure of the symmetric closure of R?
 -- Time spent: 1 hour
 
 {- Function to check if they are the same -}
 eqClosure :: Rel Int -> Bool
 eqClosure r = (symClos (trClo r)) == (trClo (symClos r))
-  
-  
+
+
 symTransClos, transSymClos :: Rel Int -> IO()
 symTransClos r = print (symClos (trClo r))
 transSymClos r = print (trClo (symClos r))
@@ -382,12 +414,12 @@ symTraSameAsTraSymCon = symTraSameAsTraSym [(1,2)]
 
   {-  If we use the following input:
       [(1,2)]
-      The function 'eqClosure' returns 'false' 
-      
+      The function 'eqClosure' returns 'false'
+
       Using the function symTransClos we get: [(1,2),(2,1)]
       Using the function transSymClos we get: [(1,2),(1,1),(2,1)]
-  
-      So we can conclude that there is in fact a difference between 
+
+      So we can conclude that there is in fact a difference between
       the symmetric closure of a relation R and the transitive closure
       of the symmetric closure of R.
   -}
@@ -471,4 +503,4 @@ calculateChain n = 1 + calculateChain (collatzProblem n)
 
 main :: IO ()
 main = print(maximum (map (\x -> ((calculateChain x),x) ) [1..999999]))
--- Use the compiler!
+-- Use the ghc compiler!
