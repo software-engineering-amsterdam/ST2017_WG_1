@@ -375,7 +375,11 @@ eqClosure r = (symClos (trClo r)) == (trClo (symClos r))
 symTransClos, transSymClos :: Rel Int -> IO()
 symTransClos r = print (symClos (trClo r))
 transSymClos r = print (trClo (symClos r))
-  
+
+-- Run symTraSameAsTraSymCon to compare
+symTraSameAsTraSym r = symClos (trClo r) == trClo (symClos r)
+symTraSameAsTraSymCon = symTraSameAsTraSym [(1,2)]
+
   {-  If we use the following input:
       [(1,2)]
       The function 'eqClosure' returns 'false' 
