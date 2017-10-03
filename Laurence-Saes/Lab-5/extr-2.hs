@@ -135,7 +135,7 @@ showNode :: Node -> IO()
 showNode = showSudoku . fst
 
 solved  :: Node -> Bool
-solved (s,cost) = length (concat cost) == 0 && all (\x -> s x /= 0) [(x,y) | x <- positions, y <- positions ]
+solved (s,cost) = all (\x -> s x /= 0) [(x,y) | x <- positions, y <- positions ]
 
 extendNode :: Node -> (Row, Column, [Value]) -> [Node]
 extendNode (s,constraints) (r,c,vs) =
@@ -236,16 +236,16 @@ cost = constraints (sud)
 sudn = (sud, cost)
 
 example1 :: Grid
-example1 = [[9,3,7,2,1,8,6,0,4],
-            [2,1,4,0,7,6,5,8,3],
-            [5,6,8,9,4,3,1,7,2],
-            [4,5,3,1,8,7,2,9,6],
-            [8,2,6,3,9,5,4,1,7],
-            [7,9,1,4,6,2,3,5,8],
-            [6,7,2,8,3,1,9,4,5],
-            [3,8,9,6,5,4,7,2,1],
-            [1,4,5,7,2,9,8,3,0]]
-
+example1 = [[7,6,1,4,9,8,5,3,2],
+            [4,5,9,6,2,3,8,7,1],
+            [8,2,3,1,7,5,4,9,6],
+            [6,4,7,3,1,2,9,8,5],
+            [9,1,8,5,6,4,3,2,7],
+            [2,3,5,9,8,7,6,1,4],
+            [3,9,2,7,4,6,1,5,8],
+            [5,7,6,8,3,1,2,4,9],
+            [1,8,4,2,5,9,7,6,3]
+            ]
 
 example2 :: Grid
 example2 = [[5,4,8,3,1,2,7,9,6],
@@ -393,3 +393,6 @@ main = do [r] <- rsolveNs [emptyN]
           showNode r
           s  <- genProblem r
           showNode s
+
+main2 = do s  <- genProblem sudn
+           showNode s
