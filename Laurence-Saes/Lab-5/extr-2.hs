@@ -5,6 +5,8 @@ where
 
 import Data.List
 import System.Random
+import Test.QuickCheck
+import Test.QuickCheck.Monadic
 
 type Row    = Int
 type Column = Int
@@ -357,3 +359,20 @@ main = do [r] <- rsolveNs [emptyN]
           showNode r
           s  <- genProblem r
           showNode s
+
+testSodoku :: IO (Bool)
+testSodoku = do [r] <- rsolveNs [emptyN]
+                s  <- genProblem r
+                return (uniqueSol s)
+
+-- https://hackage.haskell.org/package/QuickCheck-2.10.0.1/docs/Test-QuickCheck-Monadic.html
+prop_unique_sol :: Property
+prop_unique_sol = monadicIO $ do
+  solQC <- run (testSodoku)
+  assert (solQC)
+
+-- quickCheck prop_unique_sol
+
+{-
+ The new method is easier because this way you can centralize the constraints
+-}
