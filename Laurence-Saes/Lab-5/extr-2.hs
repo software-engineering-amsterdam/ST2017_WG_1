@@ -365,6 +365,11 @@ testSodoku = do [r] <- rsolveNs [emptyN]
                 s  <- genProblem r
                 return (uniqueSol s)
 
+cost = constraints (grid2sud example5)
+sud = grid2sud example5
+sudN = (sud,cost)
+
+
 -- https://hackage.haskell.org/package/QuickCheck-2.10.0.1/docs/Test-QuickCheck-Monadic.html
 prop_unique_sol :: Property
 prop_unique_sol = monadicIO $ do
@@ -375,4 +380,5 @@ prop_unique_sol = monadicIO $ do
 
 {-
  The new method is easier because this way you can centralize the constraints
+ TIme spent 6 hours
 -}

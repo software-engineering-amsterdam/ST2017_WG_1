@@ -163,10 +163,7 @@ solved  :: Node -> Bool
 solved = null . snd
 
 extendNode :: Node -> Constraint -> [Node]
-extendNode (s,constraints) (r,c,vs) =
-   [(extend s ((r,c),v),
-     sortBy length3rd $
-         prune (r,c,v) constraints) | v <- vs ]
+extendNode (s,constrants) (r,c,vs) = map (\x -> (x, constraints x)) [extend s ((r,c),v) | v <- vs ]
 
 prune :: (Row,Column,Value)
       -> [Constraint] -> [Constraint]
@@ -236,16 +233,16 @@ solveAndShow gr = solveShowNs (initNode gr)
 solveShowNs :: [Node] -> IO[()]
 solveShowNs = sequence . fmap showNode . solveNs
 
-example1 :: Grid
-example1 = [[5,3,0,0,7,0,0,0,0],
-            [6,0,0,1,9,5,0,0,0],
-            [0,9,8,0,0,0,0,6,0],
-            [8,0,0,0,6,0,0,0,3],
-            [4,0,0,8,0,3,0,0,1],
-            [7,0,0,0,2,0,0,0,6],
-            [0,6,0,0,0,0,2,8,0],
-            [0,0,0,4,1,9,0,0,5],
-            [0,0,0,0,8,0,0,7,9]]
+exampleNRD :: Grid
+exampleNRD = [[0,0,0,3,0,0,0,0,0],
+              [0,0,0,7,0,0,3,0,0],
+              [2,0,0,0,0,0,0,0,8],
+              [0,0,6,0,0,5,0,0,0],
+              [0,9,1,6,0,0,0,0,0],
+              [3,0,0,0,7,1,2,0,0],
+              [0,0,0,0,0,0,0,3,1],
+              [0,8,0,0,4,0,0,0,0],
+              [0,0,2,0,0,0,0,0,0]]
 
 example2 :: Grid
 example2 = [[0,3,0,0,7,0,0,0,0],
@@ -380,15 +377,23 @@ genProblem n = do ys <- randomize xs
                   return (minimalize n ys)
    where xs = filledPositions (fst n)
 
+
+cost = constraints (grid2sud example5)
+sud = grid2sud exampleNRD
+sudN = (sud,cost)
+
 main :: IO ()
-main = do [r] <- rsolveNs [emptyN]
+main = do [r] <- rsolveNs [sudN]
           showNode r
-          s  <- genProblem r
-          showNode s
+
+
+--  main
 
 {-
 The sudoku from the exercise
 
+
+main
 +--------+---------+--------+
 | 4  7 8 | 3  9  2 | 6 1  5 |
 |   +--------+  +--------+  |
@@ -408,6 +413,7 @@ The sudoku from the exercise
 |   +--------+  +--------+  |
 | 1  4 2 | 5  6  3 | 8 9  7 |
 +--------+---------+--------+
+
 
 Time spent 2 hours
 -}

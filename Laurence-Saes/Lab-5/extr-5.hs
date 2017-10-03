@@ -409,5 +409,5 @@ The sudoku from the exercise
 | 1  4 2 | 5  6  3 | 8 9  7 |
 +--------+---------+--------+
 
-Time spent 2 hours
+Time spent 1 hour
 -}
