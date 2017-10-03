@@ -1,4 +1,3 @@
-
 module Lecture5
 
 where
@@ -152,9 +151,10 @@ extend = update
 update :: Eq a => (a -> b) -> (a,b) -> a -> b
 update f (y,z) x = if x == y then z else f x
 
-type Constraint = (Row,Column,[Value])
+type Position = (Row,Column)
+type Constraint = [[Position]]
 
-type Node = (Sudoku,[Constraint])
+type Node = (Sudoku,Constraint)
 
 showNode :: Node -> IO()
 showNode = showSudoku . fst
@@ -162,16 +162,23 @@ showNode = showSudoku . fst
 solved  :: Node -> Bool
 solved = null . snd
 
-extendNode :: Node -> Constraint -> [Node]
-extendNode (s,constraints) (r,c,vs) =
-   [(extend s ((r,c),v),
-     sortBy length3rd $
-         prune (r,c,v) constraints) | v <- vs ]
 
-prune :: (Row,Column,Value)
-      -> [Constraint] -> [Constraint]
+orderConstraint :: Constraint -> [(Position, Int)]
+orderConstraint c = [((x,y),postCons) | x <- positions, y <- positions, postCons <- [length (filter (==(x,y)) cellList)], postCons /= 0]
+                       where cellList = concat c
+
+
+sortBySecond :: (a,b) -> (a,b) -> Ordering
+sortBySecond (_,a) (__,b) = compare (a) (b)
+
+extendNode :: Node -> Position -> [Int] -> [Node]
+extendNode (s,constraints) (r,c) vs =
+   [(extend s ((r,c),v), prune (r,c,v) constraints) | v <- vs ]
+
+
+prune :: (Row,Column,Value) -> Constraint -> Constraint
 prune _ [] = []
-prune (r,c,v) ((x,y,zs):rest)
+prune (r,c,v) consts
   | r == x = (x,y,zs\\[v]) : prune (r,c,v) rest
   | c == y = (x,y,zs\\[v]) : prune (r,c,v) rest
   | sameblock (r,c) (x,y) =
@@ -181,7 +188,7 @@ prune (r,c,v) ((x,y,zs):rest)
 sameblock :: (Row,Column) -> (Row,Column) -> Bool
 sameblock (r,c) (x,y) = bl r == bl x && bl c == bl y ||
                         blNrc r == blNrc x && blNrc c == blNrc y
-
+{-
 initNode :: Grid -> [Node]
 initNode gr = let s = grid2sud gr in
               if (not . consistent) s then []
@@ -385,29 +392,4 @@ main = do [r] <- rsolveNs [emptyN]
           showNode r
           s  <- genProblem r
           showNode s
-
-{-
-The sudoku from the exercise
-
-+--------+---------+--------+
-| 4  7 8 | 3  9  2 | 6 1  5 |
-|   +--------+  +--------+  |
-| 6 |1 9 | 7 |5 |8 | 3 2 |4 |
-|   |    |   |  |  |     |  |
-| 2 |3 5 | 4 |1 |6 | 9 7 |8 |
-+--------+---------+--------+
-| 7 |2 6 | 8 |3 |5 | 1 4 |9 |
-|   +--------+  +--------+  |
-| 8  9 1 | 6  2  4 | 7 5  3 |
-|   +--------+  +--------+  |
-| 3 |5 4 | 9 |7 |1 | 2 8 |6 |
-+--------+---------+--------+
-| 5 |6 7 | 2 |8 |9 | 4 3 |1 |
-|   |    |   |  |  |     |  |
-| 9 |8 3 | 1 |4 |7 | 5 6 |2 |
-|   +--------+  +--------+  |
-| 1  4 2 | 5  6  3 | 8 9  7 |
-+--------+---------+--------+
-
-
 -}
