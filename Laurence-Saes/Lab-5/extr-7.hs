@@ -1,5 +1,5 @@
 
-module Main
+module Lecture5
 
 where
 
@@ -18,57 +18,35 @@ values    = [1..9]
 blocks :: [[Int]]
 blocks = [[1..3],[4..6],[7..9]]
 
-nrcBlocks :: [[Int]]
-nrcBlocks = [[2..4],[6..8]]
-
 showVal :: Value -> String
 showVal 0 = " "
 showVal d = show d
 
-showRow :: [Value] -> Bool -> IO()
-showRow [a1,a2,a3,a4,a5,a6,a7,a8,a9] nrcPipe =
+showRow :: [Value] -> IO()
+showRow [a1,a2,a3,a4,a5,a6,a7,a8,a9] =
  do  putChar '|'         ; putChar ' '
      putStr (showVal a1) ; putChar ' '
-     putChar nrcPipeChar
      putStr (showVal a2) ; putChar ' '
      putStr (showVal a3) ; putChar ' '
      putChar '|'         ; putChar ' '
      putStr (showVal a4) ; putChar ' '
-     putChar nrcPipeChar
      putStr (showVal a5) ; putChar ' '
-     putChar nrcPipeChar
      putStr (showVal a6) ; putChar ' '
      putChar '|'         ; putChar ' '
      putStr (showVal a7) ; putChar ' '
      putStr (showVal a8) ; putChar ' '
-     putChar nrcPipeChar
      putStr (showVal a9) ; putChar ' '
      putChar '|'         ; putChar '\n'
-     where nrcPipeChar = if nrcPipe
-                              then '|'
-                              else ' '
 
 showGrid :: Grid -> IO()
 showGrid [as,bs,cs,ds,es,fs,gs,hs,is] =
- do putStrLn ("+--------+---------+--------+")
-    showRow as False;
-    putStrLn ("|   +--------+  +--------+  |")
-    showRow bs True;
-    putStrLn ("|   |    |   |  |  |     |  |")
-    showRow cs True
-    putStrLn ("+--------+---------+--------+")
-    showRow ds True;
-    putStrLn ("|   +--------+  +--------+  |")
-    showRow es False;
-    putStrLn ("|   +--------+  +--------+  |")
-    showRow fs True
-    putStrLn ("+--------+---------+--------+")
-    showRow gs True;
-    putStrLn ("|   |    |   |  |  |     |  |")
-    showRow hs True;
-    putStrLn ("|   +--------+  +--------+  |")
-    showRow is False
-    putStrLn ("+--------+---------+--------+")
+ do putStrLn ("+-------+-------+-------+")
+    showRow as; showRow bs; showRow cs
+    putStrLn ("+-------+-------+-------+")
+    showRow ds; showRow es; showRow fs
+    putStrLn ("+-------+-------+-------+")
+    showRow gs; showRow hs; showRow is
+    putStrLn ("+-------+-------+-------+")
 
 type Sudoku = (Row,Column) -> Value
 
@@ -88,15 +66,9 @@ showSudoku = showGrid . sud2grid
 bl :: Int -> [Int]
 bl x = concat $ filter (elem x) blocks
 
-blNrc :: Int -> [Int]
-blNrc x = concat $ filter (elem x) nrcBlocks
-
-subGrid :: Sudoku -> (Row,Column) -> [[Value]]
+subGrid :: Sudoku -> (Row,Column) -> [Value]
 subGrid s (r,c) =
-  [
-    [ s (r',c') | r' <- bl r, c' <- bl c ],
-    [ s (r',c') | r' <- blNrc r, c' <- blNrc c ]
-  ]
+  [ s (r',c') | r' <- bl r, c' <- bl c ]
 
 freeInSeq :: [Value] -> [Value]
 freeInSeq seq = values \\ seq
@@ -110,17 +82,13 @@ freeInColumn s c =
   freeInSeq [ s (i,c) | i <- positions ]
 
 freeInSubgrid :: Sudoku -> (Row,Column) -> [Value]
-freeInSubgrid s (r,c) = freeInSeq (head (subGrid s (r,c)))
-
-freeInNrcSubgrid :: Sudoku -> (Row,Column) -> [Value]
-freeInNrcSubgrid s (r,c) = freeInSeq ((head.tail) (subGrid s (r,c)))
+freeInSubgrid s (r,c) = freeInSeq (subGrid s (r,c))
 
 freeAtPos :: Sudoku -> (Row,Column) -> [Value]
 freeAtPos s (r,c) =
   (freeInRow s r)
    `intersect` (freeInColumn s c)
    `intersect` (freeInSubgrid s (r,c))
-   `intersect` (freeInNrcSubgrid s (r,c))
 
 injective :: Eq a => [a] -> Bool
 injective xs = nub xs == xs
@@ -134,8 +102,8 @@ colInjective s c = injective vs where
    vs = filter (/= 0) [ s (i,c) | i <- positions ]
 
 subgridInjective :: Sudoku -> (Row,Column) -> Bool
-subgridInjective s (r,c) =  all (\subg -> injective (filter (/= 0) subg) ) subGrids
-                            where subGrids = subGrid s (r,c)
+subgridInjective s (r,c) = injective vs where
+   vs = filter (/= 0) (subGrid s (r,c))
 
 consistent :: Sudoku -> Bool
 consistent s = and $
@@ -144,7 +112,7 @@ consistent s = and $
                [ colInjective s c |  c <- positions ]
                 ++
                [ subgridInjective s (r,c) |
-                    r <- [1,2,4,6,7], c <- [1,2,4,6,7]]
+                    r <- [1,4,7], c <- [1,4,7]]
 
 extend :: Sudoku -> ((Row,Column),Value) -> Sudoku
 extend = update
@@ -179,8 +147,7 @@ prune (r,c,v) ((x,y,zs):rest)
   | otherwise = (x,y,zs) : prune (r,c,v) rest
 
 sameblock :: (Row,Column) -> (Row,Column) -> Bool
-sameblock (r,c) (x,y) = bl r == bl x && bl c == bl y ||
-                        blNrc r == blNrc x && blNrc c == blNrc y
+sameblock (r,c) (x,y) = bl r == bl x && bl c == bl y
 
 initNode :: Grid -> [Node]
 initNode gr = let s = grid2sud gr in
@@ -380,58 +347,6 @@ genProblem n = do ys <- randomize xs
                   return (minimalize n ys)
    where xs = filledPositions (fst n)
 
-main :: IO ()
-main = do [r] <- rsolveNs [emptyN]
-          showNode r
-          s  <- genProblem r
-          showNode s
-
-{-
-*Lecture5> main
-+--------+---------+--------+
-| 7  9 1 | 5  3  4 | 6 2  8 |
-|   +--------+  +--------+  |
-| 5 |4 3 | 2 |8 |6 | 7 9 |1 |
-|   |    |   |  |  |     |  |
-| 2 |6 8 | 9 |7 |1 | 5 4 |3 |
-+--------+---------+--------+
-| 4 |5 7 | 1 |9 |2 | 8 3 |6 |
-|   +--------+  +--------+  |
-| 1  2 6 | 8  5  3 | 9 7  4 |
-|   +--------+  +--------+  |
-| 3 |8 9 | 4 |6 |7 | 2 1 |5 |
-+--------+---------+--------+
-| 8 |3 2 | 6 |1 |9 | 4 5 |7 |
-|   |    |   |  |  |     |  |
-| 9 |1 5 | 7 |4 |8 | 3 6 |2 |
-|   +--------+  +--------+  |
-| 6  7 4 | 3  2  5 | 1 8  9 |
-+--------+---------+--------+
-+--------+---------+--------+
-|      1 |    3    |        |
-|   +--------+  +--------+  |
-|   |  3 |   |  |  | 7   |  |
-|   |    |   |  |  |     |  |
-|   |    | 9 |  |  | 5   |  |
-+--------+---------+--------+
-| 4 |    |   |  |  |     |  |
-|   +--------+  +--------+  |
-|        |         |        |
-|   +--------+  +--------+  |
-|   |  9 | 4 |  |  | 2   |  |
-+--------+---------+--------+
-| 8 |    |   |1 |  |   5 |  |
-|   |    |   |  |  |     |  |
-|   |    | 7 |  |  |     |  |
-|   +--------+  +--------+  |
-| 6      | 3       |      9 |
-+--------+---------+--------+
-*Lecture5>
-
--}
-
-{-
--- For extr 6
 hints :: Sudoku -> Int
 hints s = length freeSpots
           where pos = [(a,b) | a <- [1..9], b <- [1..9]]
@@ -449,8 +364,8 @@ sumSu :: Int -> IO (Int)
 sumSu n = do sd <- getSudokus n
              return (sum (map hints sd))
 
-main :: IO ()
-main = do su <- sumSu 100
-          print (su)
+-- The normal sudoku: 2422 hints for 100 puzzles = 24.22 on average 
+-- The NRC version: 1701 hints for a 100 puzzles = 17.01 on average
+-- The NRC Sudoku needs less hints because there are more rules. For more information: http://www.staff.science.uu.nl/~kalle101/webfiles/sudoku.pdf
 
--}
+-- The sumSu, getSudokus and hints were copied to extr-5 for the NRC calculation.
