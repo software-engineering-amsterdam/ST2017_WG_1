@@ -4,7 +4,7 @@ module Main
 where
 
 import Data.List
---import System.Random
+import System.Random
 import Debug.Trace (trace)
 
 type Row    = Int
@@ -220,8 +220,9 @@ convertToPosArray (p:pos) posi = (fst p, snd p, nub (map snd (filter (\x -> fst 
 
 succNode :: Node -> [Node]
 succNode (s,[]) = []
-succNode (s,ps) = extendNode (s,leftConstrs) (x,y,vs)
-                      where (x,y,vs) = head (getMinimalConstr ps)
+succNode (s,ps) = if mincos == [] then [] else extendNode (s,leftConstrs) (x,y,vs)
+                      where mincos = getMinimalConstr ps
+                            (x,y,vs) = head (mincos)
                             leftConstrs = map (filter (/= (x,y))) ps
 
 solveAndShow :: Grid -> IO[()]
@@ -248,7 +249,7 @@ example1 = [[7,6,1,4,9,8,5,3,2],
             ]
 
 example2 :: Grid
-example2 = [[5,4,8,3,1,2,7,9,6],
+example2 = [[0,0,0,0,0,0,0,0,0],
             [6,7,3,9,5,4,2,8,1],
             [2,9,1,8,7,6,3,4,5],
             [1,6,5,2,8,3,4,7,9],
@@ -293,7 +294,7 @@ example5 = [[1,0,0,0,0,0,0,0,0],
 
 emptyN :: Node
 emptyN = (\ _ -> 0,constraints (\ _ -> 0))
-{-
+
 getRandomInt :: Int -> IO Int
 getRandomInt n = getStdRandom (randomR (0,n))
 
@@ -327,16 +328,16 @@ rsuccNode (s,cs) = do xs <- getRandomCnstr cs
                       if null xs
                         then return []
                         else return (succTend s (head xs) cs)
--}
+
 succTend :: Sudoku -> (Row, Column, [Int]) -> Constrnt -> [Node]
 succTend s (x,y,vz) cs = (extendNode (s, removeConst (x,y) cs) (x,y,vz))
 
 removeConst :: Position -> Constrnt -> Constrnt
 removeConst x xs = map (filter (/= x)) xs
-{-
+
 rsolveNs :: [Node] -> IO [Node]
 rsolveNs ns = rsearch rsuccNode solved (return ns)
--}
+
 
 rsearch :: (node -> IO [node])
             -> (node -> Bool) -> IO [node] -> IO [node]
@@ -354,14 +355,14 @@ rsearch succ goal ionodes =
                            else
                              rsearch
                                succ goal (return $ tail xs)
-{-
+
 genRandomSudoku :: IO Node
 genRandomSudoku = do [r] <- rsolveNs [emptyN]
                      return r
 
 
 randomS = genRandomSudoku >>= showNode
--}
+
 uniqueSol :: Node -> Bool
 uniqueSol node = singleton (solveNs [node]) where
   singleton [] = False
@@ -387,15 +388,11 @@ filledPositions s = [ (r,c) | r <- positions,
                               c <- positions, s (r,c) /= 0 ]
 
 genProblem :: Node -> IO Node
-genProblem n = do --ys <- randomize xs
-                  return (minimalize n xs) --ys
+genProblem n = do ys <- randomize xs
+                  return (minimalize n ys)
    where xs = filledPositions (fst n)
-{-
+
 main = do [r] <- rsolveNs [emptyN]
           showNode r
           s  <- genProblem r
-          showNode s
--}
-
-main = do s <- genProblem sudn
           showNode s
