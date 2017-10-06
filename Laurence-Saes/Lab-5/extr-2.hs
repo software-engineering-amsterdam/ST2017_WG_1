@@ -379,9 +379,10 @@ prop_unique_sol = monadicIO $ do
 -- quickCheck prop_unique_sol
 
 {-
- The new method is easier because this way you can centralize the constraints
- Time spent 6 hours
+The new method is easier because this way you can centralize the constraints 
+Time spent 6 hours 
 
+I do not if have to remove Constraint. If this approach was intended, see extra-2.1.hs for the code. Otherwise look at this program.  
 
 Optimized:
 

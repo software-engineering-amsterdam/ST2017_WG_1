@@ -396,3 +396,6 @@ main = do [r] <- rsolveNs [emptyN]
           showNode r
           s  <- genProblem r
           showNode s
+
+-- Time 5/6 hours
+-- This is the refactored version. But I do not think that this was intended.
