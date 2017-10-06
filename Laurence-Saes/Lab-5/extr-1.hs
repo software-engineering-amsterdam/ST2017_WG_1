@@ -397,6 +397,7 @@ main = do [r] <- rsolveNs [sudN]
 -- execute main
 
 {-
+Time spent 2 hours
 The sudoku from the exercise
 
 
@@ -422,5 +423,5 @@ main
 +--------+---------+--------+
 
 
-Time spent 2 hours
+
 -}

@@ -364,7 +364,8 @@ sumSu :: Int -> IO (Int)
 sumSu n = do sd <- getSudokus n
              return (sum (map hints sd))
 
--- The normal sudoku: 2422 hints for 100 puzzles = 24.22 on average 
+-- Time spent, 2 hours
+-- The normal sudoku: 2422 hints for 100 puzzles = 24.22 on average
 -- The NRC version: 1701 hints for a 100 puzzles = 17.01 on average
 -- The NRC Sudoku needs less hints because there are more rules. For more information: http://www.staff.science.uu.nl/~kalle101/webfiles/sudoku.pdf
 

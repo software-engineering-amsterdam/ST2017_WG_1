@@ -387,6 +387,8 @@ withEmptyBlocks n | n >= 0 && n < 5 = do [r] <- rsolveNs [emptyN]
                   | otherwise = do print "Impossible"
 
 {-
+Time spent, 2 hours
+
 withEmptyBlocks 3
 +-------+-------+-------+
 | 5 8 6 | 4 2 3 | 7 9 1 |
