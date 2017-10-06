@@ -134,8 +134,12 @@ colInjective s c = injective vs where
    vs = filter (/= 0) [ s (i,c) | i <- positions ]
 
 subgridInjective :: Sudoku -> (Row,Column) -> Bool
-subgridInjective s (r,c) =  all (\subg -> injective (filter (/= 0) subg) ) subGrids
-                            where subGrids = subGrid s (r,c)
+subgridInjective s (r,c) =  injective (filter (/= 0) subg)
+                            where subg = head (subGrid s (r,c))
+
+subgridInjectiveNRC :: Sudoku -> (Row,Column) -> Bool
+subgridInjectiveNRC s (r,c) =  injective (filter (/= 0) subg)
+                            where subg = (head.tail) (subGrid s (r,c))
 
 consistent :: Sudoku -> Bool
 consistent s = and $
@@ -144,7 +148,10 @@ consistent s = and $
                [ colInjective s c |  c <- positions ]
                 ++
                [ subgridInjective s (r,c) |
-                    r <- [1,2,4,6,7], c <- [1,2,4,6,7]]
+                   r <- [1,4,7], c <- [1,4,7]]
+                ++
+               [ subgridInjectiveNRC s (r,c) |
+                   r <- [2,6], c <- [2,6]]
 
 extend :: Sudoku -> ((Row,Column),Value) -> Sudoku
 extend = update
@@ -387,7 +394,7 @@ main = do [r] <- rsolveNs [sudN]
           showNode r
 
 
---  main
+-- execute main
 
 {-
 The sudoku from the exercise
