@@ -1,11 +1,12 @@
 
-module Main
+module Lecture5
 
 where
 
 import Data.List
---import System.Random
-import Debug.Trace (trace)
+import System.Random
+import Test.QuickCheck
+import Test.QuickCheck.Monadic
 
 type Row    = Int
 type Column = Int
@@ -85,17 +86,17 @@ freeInColumn s c =
 freeInSubgrid :: Sudoku -> (Row,Column) -> [Value]
 freeInSubgrid s (r,c) = freeInSeq (subGrid s (r,c))
 
-freeAtPos :: Sudoku -> (Row,Column) -> [Value]
-freeAtPos s (r,c) =
-  (freeInRow s r)
-   `intersect` (freeInColumn s c)
-   `intersect` (freeInSubgrid s (r,c))
+type Position = (Row,Column)
+type Constrnt = [[Position]]
 
-freeAtPos' :: Sudoku -> Position -> Constrnt -> [Value]
-freeAtPos' s (r,c) xs = let
-  ys = filter (elem (r,c)) xs
-    in
-      foldl1 intersect (map ((values \\) . map s) ys)
+rowConstrnt = [[(r,c)| c <- values ] | r <- values ]
+columnConstrnt = [[(r,c)| r <- values ] | c <- values ]
+blockConstrnt = [[(r,c)| r <- b1, c <- b2 ] | b1 <- blocks, b2 <- blocks ]
+constList = rowConstrnt ++ columnConstrnt ++ blockConstrnt
+
+freeAtPos :: Sudoku -> Position -> Constrnt -> [Value]
+freeAtPos s (r,c) xs = let ys = filter (elem (r,c)) xs
+                         in foldl1 intersect (map ((values \\) . map s) ys)
 
 injective :: Eq a => [a] -> Bool
 injective xs = nub xs == xs
@@ -127,30 +128,30 @@ extend = update
 update :: Eq a => (a -> b) -> (a,b) -> a -> b
 update f (y,z) x = if x == y then z else f x
 
-type Position = (Row,Column)
-type Constrnt = [[Position]]
-type Node = (Sudoku,Constrnt)
+type Constraint = (Row,Column,[Value])
+type Node = (Sudoku,[Constraint])
 
 showNode :: Node -> IO()
 showNode = showSudoku . fst
 
 solved  :: Node -> Bool
-solved (s,cost) = all (\x -> s x /= 0) [(x,y) | x <- positions, y <- positions ]
+solved = null . snd
 
-extendNode :: Node -> (Row, Column, [Value]) -> [Node]
+extendNode :: Node -> Constraint -> [Node]
 extendNode (s,constraints) (r,c,vs) =
    [(extend s ((r,c),v),
-     prune (r,c,v) constraints) | v <- vs ]
+     sortBy length3rd $
+         prune (r,c,v) constraints) | v <- vs ]
 
-prune :: (Row,Column,Value) -> Constrnt -> Constrnt
+prune :: (Row,Column,Value)
+      -> [Constraint] -> [Constraint]
 prune _ [] = []
-prune (r,c,v) consta = beforeValue ++ (replaceForValue : afterValue)
-                        where beforeValue = [consta !! before | before <- [0..(v-2)]]
-                              afterValue  = [consta !! after | after <- [(v)..8]]
-                              rows = [(r,c') | c' <- [1..9]]
-                              cols = [(r',c) | r' <- [1..9]]
-                              blocks = [(r',c') | r' <- bl r, c' <- bl c ]
-                              replaceForValue = consta !! (v-1) \\ concat [rows,cols,blocks]
+prune (r,c,v) ((x,y,zs):rest)
+  | r == x = (x,y,zs\\[v]) : prune (r,c,v) rest
+  | c == y = (x,y,zs\\[v]) : prune (r,c,v) rest
+  | sameblock (r,c) (x,y) =
+        (x,y,zs\\[v]) : prune (r,c,v) rest
+  | otherwise = (x,y,zs) : prune (r,c,v) rest
 
 sameblock :: (Row,Column) -> (Row,Column) -> Bool
 sameblock (r,c) (x,y) = bl r == bl x && bl c == bl y
@@ -168,16 +169,10 @@ openPositions s = [ (r,c) | r <- positions,
 length3rd :: (a,b,[c]) -> (a,b,[c]) -> Ordering
 length3rd (_,_,zs) (_,_,zs') = compare (length zs) (length zs')
 
-constraints :: Sudoku -> Constrnt
-constraints s = createConsr items 1
-                where items = [(v,(r,c)) | (r,c) <- openPositions s, v <- freeAtPos s (r,c) ]
-
-
-createConsr :: [(Value, (Row, Column))] -> Int -> Constrnt
-createConsr pos s | s > 9 = []
-                  | otherwise = map snd (filter (\x -> fst x == s) pos)  : createConsr pos (s+1)
-
-
+constraints :: Sudoku -> [Constraint]
+constraints s = sortBy length3rd
+    [(r,c, freeAtPos s (r,c) constList) |
+                       (r,c) <- openPositions s ]
 
 data Tree a = T a [Tree a] deriving (Eq,Ord,Show)
 
@@ -205,24 +200,9 @@ search children goal (x:xs)
 solveNs :: [Node] -> [Node]
 solveNs = search succNode solved
 
-
-getMinimalConstr :: Constrnt -> [(Row, Column, [Int])]
-getMinimalConstr pos = convertToPosArray positions values
-                        where allItems = (concat pos)
-                              lengthPos = map (\x -> ((length (filter (==x) allItems)), x)) (nub allItems)
-                              selectLength = minimum (map fst lengthPos)
-                              positions = map snd (filter (\x -> fst x == selectLength) lengthPos)
-                              values = [ (sPos, i + 1) | i <- [0..8], sPos <- positions, elem sPos (pos !! i)]
-
-convertToPosArray :: [Position] -> [(Position, Int)] -> [(Row, Column, [Int])]
-convertToPosArray [] _ = []
-convertToPosArray (p:pos) posi = (fst p, snd p, nub (map snd (filter (\x -> fst x == p) posi) )) : convertToPosArray pos posi
-
 succNode :: Node -> [Node]
 succNode (s,[]) = []
-succNode (s,ps) = extendNode (s,leftConstrs) (x,y,vs)
-                      where (x,y,vs) = head (getMinimalConstr ps)
-                            leftConstrs = map (filter (/= (x,y))) ps
+succNode (s,p:ps) = extendNode (s,ps) p
 
 solveAndShow :: Grid -> IO[()]
 solveAndShow gr = solveShowNs (initNode gr)
@@ -230,33 +210,27 @@ solveAndShow gr = solveShowNs (initNode gr)
 solveShowNs :: [Node] -> IO[()]
 solveShowNs = sequence . fmap showNode . solveNs
 
-
-sud = grid2sud example2
-cost = constraints (sud)
-sudn = (sud, cost)
-
 example1 :: Grid
-example1 = [[7,6,1,4,9,8,5,3,2],
-            [4,5,9,6,2,3,8,7,1],
-            [8,2,3,1,7,5,4,9,6],
-            [6,4,7,3,1,2,9,8,5],
-            [9,1,8,5,6,4,3,2,7],
-            [2,3,5,9,8,7,6,1,4],
-            [3,9,2,7,4,6,1,5,8],
-            [5,7,6,8,3,1,2,4,9],
-            [1,8,4,2,5,9,7,6,3]
-            ]
+example1 = [[5,3,0,0,7,0,0,0,0],
+            [6,0,0,1,9,5,0,0,0],
+            [0,9,8,0,0,0,0,6,0],
+            [8,0,0,0,6,0,0,0,3],
+            [4,0,0,8,0,3,0,0,1],
+            [7,0,0,0,2,0,0,0,6],
+            [0,6,0,0,0,0,2,8,0],
+            [0,0,0,4,1,9,0,0,5],
+            [0,0,0,0,8,0,0,7,9]]
 
 example2 :: Grid
-example2 = [[5,4,8,3,1,2,7,9,6],
-            [6,7,3,9,5,4,2,8,1],
-            [2,9,1,8,7,6,3,4,5],
-            [1,6,5,2,8,3,4,7,9],
-            [9,2,4,7,6,1,8,5,3],
-            [8,3,7,5,4,9,1,6,2],
-            [7,8,6,1,3,5,9,2,4],
-            [3,5,9,4,2,8,6,1,7],
-            [4,1,2,6,9,7,5,3,8]]
+example2 = [[0,3,0,0,7,0,0,0,0],
+            [6,0,0,1,9,5,0,0,0],
+            [0,9,8,0,0,0,0,6,0],
+            [8,0,0,0,6,0,0,0,3],
+            [4,0,0,8,0,3,0,0,1],
+            [7,0,0,0,2,0,0,0,6],
+            [0,6,0,0,0,0,2,8,0],
+            [0,0,0,4,1,9,0,0,5],
+            [0,0,0,0,8,0,0,7,9]]
 
 example3 :: Grid
 example3 = [[1,0,0,0,3,0,5,0,4],
@@ -293,7 +267,7 @@ example5 = [[1,0,0,0,0,0,0,0,0],
 
 emptyN :: Node
 emptyN = (\ _ -> 0,constraints (\ _ -> 0))
-{-
+
 getRandomInt :: Int -> IO Int
 getRandomInt n = getStdRandom (randomR (0,n))
 
@@ -310,33 +284,23 @@ randomize xs = do y <- getRandomItem xs
                     else do ys <- randomize (xs\\y)
                             return (head y:ys)
 
-getconv randomI = convc
-                  where (x,y,v) = head (randomI)
-                        placeh = [1..9]
-                        convc = map (\x -> if elem x v then [(x,y)] else [] ) placeh
+sameLen :: Constraint -> Constraint -> Bool
+sameLen (_,_,xs) (_,_,ys) = length xs == length ys
 
-
-getRandomCnstr :: Constrnt -> IO [(Row, Column, [Int])]
-getRandomCnstr cs = do randomI <- getRandomItem (getMinimalConstr cs)
-                       return (randomI)
-
+getRandomCnstr :: [Constraint] -> IO [Constraint]
+getRandomCnstr cs = getRandomItem (f cs)
+  where f [] = []
+        f (x:xs) = takeWhile (sameLen x) (x:xs)
 
 rsuccNode :: Node -> IO [Node]
 rsuccNode (s,cs) = do xs <- getRandomCnstr cs
-                      --showSudoku s
                       if null xs
                         then return []
-                        else return (succTend s (head xs) cs)
--}
-succTend :: Sudoku -> (Row, Column, [Int]) -> Constrnt -> [Node]
-succTend s (x,y,vz) cs = (extendNode (s, removeConst (x,y) cs) (x,y,vz))
+                        else return
+                          (extendNode (s,cs\\xs) (head xs))
 
-removeConst :: Position -> Constrnt -> Constrnt
-removeConst x xs = map (filter (/= x)) xs
-{-
 rsolveNs :: [Node] -> IO [Node]
 rsolveNs ns = rsearch rsuccNode solved (return ns)
--}
 
 rsearch :: (node -> IO [node])
             -> (node -> Bool) -> IO [node] -> IO [node]
@@ -354,14 +318,13 @@ rsearch succ goal ionodes =
                            else
                              rsearch
                                succ goal (return $ tail xs)
-{-
+
 genRandomSudoku :: IO Node
 genRandomSudoku = do [r] <- rsolveNs [emptyN]
                      return r
 
-
 randomS = genRandomSudoku >>= showNode
--}
+
 uniqueSol :: Node -> Bool
 uniqueSol node = singleton (solveNs [node]) where
   singleton [] = False
@@ -387,15 +350,101 @@ filledPositions s = [ (r,c) | r <- positions,
                               c <- positions, s (r,c) /= 0 ]
 
 genProblem :: Node -> IO Node
-genProblem n = do --ys <- randomize xs
-                  return (minimalize n xs) --ys
+genProblem n = do ys <- randomize xs
+                  return (minimalize n ys)
    where xs = filledPositions (fst n)
-{-
+
+main :: IO ()
 main = do [r] <- rsolveNs [emptyN]
           showNode r
           s  <- genProblem r
           showNode s
--}
 
-main = do s <- genProblem sudn
-          showNode s
+testSodoku :: IO (Bool)
+testSodoku = do [r] <- rsolveNs [emptyN]
+                s  <- genProblem r
+                return (uniqueSol s)
+
+cost = constraints (grid2sud example5)
+sud = grid2sud example5
+sudN = (sud,cost)
+
+
+-- https://hackage.haskell.org/package/QuickCheck-2.10.0.1/docs/Test-QuickCheck-Monadic.html
+prop_unique_sol :: Property
+prop_unique_sol = monadicIO $ do
+  solQC <- run (testSodoku)
+  assert (solQC)
+
+-- quickCheck prop_unique_sol
+
+{-
+The new method is easier because this way you can centralize the constraints 
+Time spent 6 hours 
+
+I do not if have to remove Constraint. If this approach was intended, see extra-2.1.hs for the code. Otherwise look at this program.  
+
+Optimized:
+
+*Lecture5> main
++-------+-------+-------+
+| 9 8 7 | 5 2 6 | 1 3 4 |
+| 6 2 3 | 9 1 4 | 7 8 5 |
+| 1 5 4 | 8 3 7 | 9 6 2 |
++-------+-------+-------+
+| 2 9 5 | 3 6 8 | 4 7 1 |
+| 4 3 8 | 1 7 5 | 6 2 9 |
+| 7 1 6 | 4 9 2 | 3 5 8 |
++-------+-------+-------+
+| 8 6 9 | 2 4 3 | 5 1 7 |
+| 5 7 1 | 6 8 9 | 2 4 3 |
+| 3 4 2 | 7 5 1 | 8 9 6 |
++-------+-------+-------+
++-------+-------+-------+
+| 9   7 |       |   3 4 |
+|       |   1   |   8   |
+|   5   |       |       |
++-------+-------+-------+
+|     5 | 3   8 |       |
+|       | 1   5 | 6   9 |
+| 7     |   9   |       |
++-------+-------+-------+
+|     9 |   4   |     7 |
+| 5 7   |       | 2     |
+| 3   2 |       |     6 |
++-------+-------+-------+
+(2.59 secs, 1,150,969,264 bytes)
+
+
++-------+-------+-------+
+| 4 8 2 | 6 7 1 | 9 3 5 |
+| 3 5 7 | 9 4 2 | 1 8 6 |
+| 9 1 6 | 5 3 8 | 4 2 7 |
++-------+-------+-------+
+| 7 2 8 | 4 5 9 | 3 6 1 |
+| 5 9 4 | 1 6 3 | 8 7 2 |
+| 6 3 1 | 2 8 7 | 5 4 9 |
++-------+-------+-------+
+| 1 7 9 | 3 2 4 | 6 5 8 |
+| 8 6 3 | 7 1 5 | 2 9 4 |
+| 2 4 5 | 8 9 6 | 7 1 3 |
++-------+-------+-------+
++-------+-------+-------+
+|   8   | 6   1 |     5 |
+|     7 |       |       |
+| 9     |     8 | 4     |
++-------+-------+-------+
+| 7 2   | 4     |     1 |
+| 5 9   |   6   |     2 |
+|   3   |       |       |
++-------+-------+-------+
+| 1     |     4 |     8 |
+|       | 7     |     4 |
+|       |   9   | 7 1   |
++-------+-------+-------+
+(4.41 secs, 1,864,369,064 bytes)
+
+
+
+
+-}

@@ -5,8 +5,6 @@ where
 
 import Data.List
 import System.Random
-import Test.QuickCheck
-import Test.QuickCheck.Monadic
 
 type Row    = Int
 type Column = Int
@@ -86,17 +84,11 @@ freeInColumn s c =
 freeInSubgrid :: Sudoku -> (Row,Column) -> [Value]
 freeInSubgrid s (r,c) = freeInSeq (subGrid s (r,c))
 
-type Position = (Row,Column)
-type Constrnt = [[Position]]
-
-rowConstrnt = [[(r,c)| c <- values ] | r <- values ]
-columnConstrnt = [[(r,c)| r <- values ] | c <- values ]
-blockConstrnt = [[(r,c)| r <- b1, c <- b2 ] | b1 <- blocks, b2 <- blocks ]
-constList = rowConstrnt ++ columnConstrnt ++ blockConstrnt
-
-freeAtPos :: Sudoku -> Position -> Constrnt -> [Value]
-freeAtPos s (r,c) xs = let ys = filter (elem (r,c)) xs
-                         in foldl1 intersect (map ((values \\) . map s) ys)
+freeAtPos :: Sudoku -> (Row,Column) -> [Value]
+freeAtPos s (r,c) =
+  (freeInRow s r)
+   `intersect` (freeInColumn s c)
+   `intersect` (freeInSubgrid s (r,c))
 
 injective :: Eq a => [a] -> Bool
 injective xs = nub xs == xs
@@ -129,6 +121,7 @@ update :: Eq a => (a -> b) -> (a,b) -> a -> b
 update f (y,z) x = if x == y then z else f x
 
 type Constraint = (Row,Column,[Value])
+
 type Node = (Sudoku,[Constraint])
 
 showNode :: Node -> IO()
@@ -171,7 +164,7 @@ length3rd (_,_,zs) (_,_,zs') = compare (length zs) (length zs')
 
 constraints :: Sudoku -> [Constraint]
 constraints s = sortBy length3rd
-    [(r,c, freeAtPos s (r,c) constList) |
+    [(r,c, freeAtPos s (r,c)) |
                        (r,c) <- openPositions s ]
 
 data Tree a = T a [Tree a] deriving (Eq,Ord,Show)
@@ -354,97 +347,26 @@ genProblem n = do ys <- randomize xs
                   return (minimalize n ys)
    where xs = filledPositions (fst n)
 
-main :: IO ()
-main = do [r] <- rsolveNs [emptyN]
-          showNode r
-          s  <- genProblem r
-          showNode s
+hints :: Sudoku -> Int
+hints s = length freeSpots
+          where pos = [(a,b) | a <- [1..9], b <- [1..9]]
+                freeSpots = filter (\x -> s x /= 0) pos
 
-testSodoku :: IO (Bool)
-testSodoku = do [r] <- rsolveNs [emptyN]
-                s  <- genProblem r
-                return (uniqueSol s)
+getSudokus :: Int -> IO [Sudoku]
+getSudokus 0 = do return []
+getSudokus n = do [r] <- rsolveNs [emptyN]
+                  (su,_) <- genProblem r
+                  showSudoku su
+                  next <- getSudokus (n-1)
+                  return (su : next)
 
-cost = constraints (grid2sud example5)
-sud = grid2sud example5
-sudN = (sud,cost)
+sumSu :: Int -> IO (Int)
+sumSu n = do sd <- getSudokus n
+             return (sum (map hints sd))
 
+-- Time spent, 2 hours
+-- The normal sudoku: 2422 hints for 100 puzzles = 24.22 on average
+-- The NRC version: 1701 hints for a 100 puzzles = 17.01 on average
+-- The NRC Sudoku needs less hints because there are more rules. For more information: http://www.staff.science.uu.nl/~kalle101/webfiles/sudoku.pdf
 
--- https://hackage.haskell.org/package/QuickCheck-2.10.0.1/docs/Test-QuickCheck-Monadic.html
-prop_unique_sol :: Property
-prop_unique_sol = monadicIO $ do
-  solQC <- run (testSodoku)
-  assert (solQC)
-
--- quickCheck prop_unique_sol
-
-{-
-The new method is easier because this way you can centralize the constraints 
-Time spent 6 hours 
-
-I do not if have to remove Constraint. If this approach was intended, see extra-2.1.hs for the code. Otherwise look at this program.  
-
-Optimized:
-
-*Lecture5> main
-+-------+-------+-------+
-| 9 8 7 | 5 2 6 | 1 3 4 |
-| 6 2 3 | 9 1 4 | 7 8 5 |
-| 1 5 4 | 8 3 7 | 9 6 2 |
-+-------+-------+-------+
-| 2 9 5 | 3 6 8 | 4 7 1 |
-| 4 3 8 | 1 7 5 | 6 2 9 |
-| 7 1 6 | 4 9 2 | 3 5 8 |
-+-------+-------+-------+
-| 8 6 9 | 2 4 3 | 5 1 7 |
-| 5 7 1 | 6 8 9 | 2 4 3 |
-| 3 4 2 | 7 5 1 | 8 9 6 |
-+-------+-------+-------+
-+-------+-------+-------+
-| 9   7 |       |   3 4 |
-|       |   1   |   8   |
-|   5   |       |       |
-+-------+-------+-------+
-|     5 | 3   8 |       |
-|       | 1   5 | 6   9 |
-| 7     |   9   |       |
-+-------+-------+-------+
-|     9 |   4   |     7 |
-| 5 7   |       | 2     |
-| 3   2 |       |     6 |
-+-------+-------+-------+
-(2.59 secs, 1,150,969,264 bytes)
-
-
-+-------+-------+-------+
-| 4 8 2 | 6 7 1 | 9 3 5 |
-| 3 5 7 | 9 4 2 | 1 8 6 |
-| 9 1 6 | 5 3 8 | 4 2 7 |
-+-------+-------+-------+
-| 7 2 8 | 4 5 9 | 3 6 1 |
-| 5 9 4 | 1 6 3 | 8 7 2 |
-| 6 3 1 | 2 8 7 | 5 4 9 |
-+-------+-------+-------+
-| 1 7 9 | 3 2 4 | 6 5 8 |
-| 8 6 3 | 7 1 5 | 2 9 4 |
-| 2 4 5 | 8 9 6 | 7 1 3 |
-+-------+-------+-------+
-+-------+-------+-------+
-|   8   | 6   1 |     5 |
-|     7 |       |       |
-| 9     |     8 | 4     |
-+-------+-------+-------+
-| 7 2   | 4     |     1 |
-| 5 9   |   6   |     2 |
-|   3   |       |       |
-+-------+-------+-------+
-| 1     |     4 |     8 |
-|       | 7     |     4 |
-|       |   9   | 7 1   |
-+-------+-------+-------+
-(4.41 secs, 1,864,369,064 bytes)
-
-
-
-
--}
+-- The sumSu, getSudokus and hints were copied to extr-5 for the NRC calculation.

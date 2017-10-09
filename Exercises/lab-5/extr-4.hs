@@ -5,8 +5,7 @@ where
 
 import Data.List
 import System.Random
-import Test.QuickCheck
-import Test.QuickCheck.Monadic
+import Control.Monad
 
 type Row    = Int
 type Column = Int
@@ -72,6 +71,9 @@ subGrid :: Sudoku -> (Row,Column) -> [Value]
 subGrid s (r,c) =
   [ s (r',c') | r' <- bl r, c' <- bl c ]
 
+subGridCom :: Sudoku -> (Row,Column) -> [(Row,Column)]
+subGridCom s (r,c) = [ (r',c') | r' <- bl r, c' <- bl c ]
+
 freeInSeq :: [Value] -> [Value]
 freeInSeq seq = values \\ seq
 
@@ -86,17 +88,11 @@ freeInColumn s c =
 freeInSubgrid :: Sudoku -> (Row,Column) -> [Value]
 freeInSubgrid s (r,c) = freeInSeq (subGrid s (r,c))
 
-type Position = (Row,Column)
-type Constrnt = [[Position]]
-
-rowConstrnt = [[(r,c)| c <- values ] | r <- values ]
-columnConstrnt = [[(r,c)| r <- values ] | c <- values ]
-blockConstrnt = [[(r,c)| r <- b1, c <- b2 ] | b1 <- blocks, b2 <- blocks ]
-constList = rowConstrnt ++ columnConstrnt ++ blockConstrnt
-
-freeAtPos :: Sudoku -> Position -> Constrnt -> [Value]
-freeAtPos s (r,c) xs = let ys = filter (elem (r,c)) xs
-                         in foldl1 intersect (map ((values \\) . map s) ys)
+freeAtPos :: Sudoku -> (Row,Column) -> [Value]
+freeAtPos s (r,c) =
+  (freeInRow s r)
+   `intersect` (freeInColumn s c)
+   `intersect` (freeInSubgrid s (r,c))
 
 injective :: Eq a => [a] -> Bool
 injective xs = nub xs == xs
@@ -129,6 +125,7 @@ update :: Eq a => (a -> b) -> (a,b) -> a -> b
 update f (y,z) x = if x == y then z else f x
 
 type Constraint = (Row,Column,[Value])
+
 type Node = (Sudoku,[Constraint])
 
 showNode :: Node -> IO()
@@ -171,7 +168,7 @@ length3rd (_,_,zs) (_,_,zs') = compare (length zs) (length zs')
 
 constraints :: Sudoku -> [Constraint]
 constraints s = sortBy length3rd
-    [(r,c, freeAtPos s (r,c) constList) |
+    [(r,c, freeAtPos s (r,c)) |
                        (r,c) <- openPositions s ]
 
 data Tree a = T a [Tree a] deriving (Eq,Ord,Show)
@@ -211,15 +208,15 @@ solveShowNs :: [Node] -> IO[()]
 solveShowNs = sequence . fmap showNode . solveNs
 
 example1 :: Grid
-example1 = [[5,3,0,0,7,0,0,0,0],
-            [6,0,0,1,9,5,0,0,0],
-            [0,9,8,0,0,0,0,6,0],
-            [8,0,0,0,6,0,0,0,3],
-            [4,0,0,8,0,3,0,0,1],
-            [7,0,0,0,2,0,0,0,6],
-            [0,6,0,0,0,0,2,8,0],
-            [0,0,0,4,1,9,0,0,5],
-            [0,0,0,0,8,0,0,7,9]]
+example1 = [[4,1,2,8,5,3,7,9,6],
+            [9,6,5,7,2,4,8,1,3],
+            [8,3,7,6,1,9,5,4,2],
+            [1,9,8,2,6,7,4,3,5],
+            [5,4,6,9,3,1,2,7,8],
+            [7,2,3,5,4,8,9,6,1],
+            [2,8,4,3,9,6,1,5,7],
+            [6,7,9,1,8,5,3,2,4],
+            [3,5,1,4,7,2,6,8,9]]
 
 example2 :: Grid
 example2 = [[0,3,0,0,7,0,0,0,0],
@@ -354,97 +351,104 @@ genProblem n = do ys <- randomize xs
                   return (minimalize n ys)
    where xs = filledPositions (fst n)
 
-main :: IO ()
-main = do [r] <- rsolveNs [emptyN]
-          showNode r
-          s  <- genProblem r
-          showNode s
+showSudokuWithSol :: Node -> Node -> IO ()
+showSudokuWithSol r s = do showNode r
+                           showNode s
 
-testSodoku :: IO (Bool)
-testSodoku = do [r] <- rsolveNs [emptyN]
-                s  <- genProblem r
-                return (uniqueSol s)
+-- https://stackoverflow.com/questions/21775378/get-all-possible-combinations-of-k-elements-from-a-list
+x -: f = f x
+infixl 0 -:
 
-cost = constraints (grid2sud example5)
-sud = grid2sud example5
-sudN = (sud,cost)
+combinations :: Ord a => Int -> [a] -> [[a]]
+combinations k l = (sequence . replicate k) l -: map sort -: sort -: nub
+   -: filter (\l -> (length . nub) l == length l)
+
+multiExtend :: [((Row,Column),Int)] -> Sudoku -> Sudoku
+multiExtend [] s = s
+multiExtend ((c,v):xs) s = multiExtend xs ns
+                           where ns = extend s (c,v)
+
+removeBlocks :: Node -> Int -> [Node]
+removeBlocks (s,_) n = validPuzzels
+                       where subGrids = [subGridCom s (r,c) | r <- [1,4,7], c <- [1,4,7]]
+                             removeCombinations = combinations n subGrids
+                             nextPuzels = map (\grid -> multiExtend (zip (concat grid) (repeat 0)) s) removeCombinations
+                             nextNodes = map (\x -> (x, constraints x)) nextPuzels
+                             validPuzzels = filter (uniqueSol) nextNodes
 
 
--- https://hackage.haskell.org/package/QuickCheck-2.10.0.1/docs/Test-QuickCheck-Monadic.html
-prop_unique_sol :: Property
-prop_unique_sol = monadicIO $ do
-  solQC <- run (testSodoku)
-  assert (solQC)
 
--- quickCheck prop_unique_sol
+withEmptyBlocks :: Int -> IO ()
+withEmptyBlocks n | n >= 0 && n < 5 = do [r] <- rsolveNs [emptyN]
+                                         withoutBlocks <- (return (removeBlocks r n))
+                                         if length withoutBlocks == 0 then withEmptyBlocks n
+                                                                      else do s  <- genProblem (head withoutBlocks)
+                                                                              showSudokuWithSol r s
+                  | otherwise = do print "Impossible"
 
 {-
-The new method is easier because this way you can centralize the constraints 
-Time spent 6 hours 
+Time spent, 2 hours
 
-I do not if have to remove Constraint. If this approach was intended, see extra-2.1.hs for the code. Otherwise look at this program.  
-
-Optimized:
-
-*Lecture5> main
+withEmptyBlocks 3
 +-------+-------+-------+
-| 9 8 7 | 5 2 6 | 1 3 4 |
-| 6 2 3 | 9 1 4 | 7 8 5 |
-| 1 5 4 | 8 3 7 | 9 6 2 |
+| 5 8 6 | 4 2 3 | 7 9 1 |
+| 9 2 3 | 7 5 1 | 8 6 4 |
+| 4 1 7 | 8 9 6 | 2 5 3 |
 +-------+-------+-------+
-| 2 9 5 | 3 6 8 | 4 7 1 |
-| 4 3 8 | 1 7 5 | 6 2 9 |
-| 7 1 6 | 4 9 2 | 3 5 8 |
+| 7 3 9 | 5 4 2 | 1 8 6 |
+| 1 6 8 | 9 3 7 | 4 2 5 |
+| 2 5 4 | 6 1 8 | 3 7 9 |
 +-------+-------+-------+
-| 8 6 9 | 2 4 3 | 5 1 7 |
-| 5 7 1 | 6 8 9 | 2 4 3 |
-| 3 4 2 | 7 5 1 | 8 9 6 |
+| 8 7 5 | 3 6 4 | 9 1 2 |
+| 3 9 2 | 1 7 5 | 6 4 8 |
+| 6 4 1 | 2 8 9 | 5 3 7 |
 +-------+-------+-------+
-+-------+-------+-------+
-| 9   7 |       |   3 4 |
-|       |   1   |   8   |
-|   5   |       |       |
-+-------+-------+-------+
-|     5 | 3   8 |       |
-|       | 1   5 | 6   9 |
-| 7     |   9   |       |
-+-------+-------+-------+
-|     9 |   4   |     7 |
-| 5 7   |       | 2     |
-| 3   2 |       |     6 |
-+-------+-------+-------+
-(2.59 secs, 1,150,969,264 bytes)
-
 
 +-------+-------+-------+
-| 4 8 2 | 6 7 1 | 9 3 5 |
-| 3 5 7 | 9 4 2 | 1 8 6 |
-| 9 1 6 | 5 3 8 | 4 2 7 |
+|       |       |   9 1 |
+|       |       |   6 4 |
+|       |       | 2   3 |
 +-------+-------+-------+
-| 7 2 8 | 4 5 9 | 3 6 1 |
-| 5 9 4 | 1 6 3 | 8 7 2 |
-| 6 3 1 | 2 8 7 | 5 4 9 |
+| 7     |   4   |       |
+| 1   8 | 9 3   |       |
+| 2 5   |     8 |       |
 +-------+-------+-------+
-| 1 7 9 | 3 2 4 | 6 5 8 |
-| 8 6 3 | 7 1 5 | 2 9 4 |
-| 2 4 5 | 8 9 6 | 7 1 3 |
+| 8 7   | 3     |       |
+| 3 9   |   7   | 6     |
+|   4   | 2     | 5     |
 +-------+-------+-------+
-+-------+-------+-------+
-|   8   | 6   1 |     5 |
-|     7 |       |       |
-| 9     |     8 | 4     |
-+-------+-------+-------+
-| 7 2   | 4     |     1 |
-| 5 9   |   6   |     2 |
-|   3   |       |       |
-+-------+-------+-------+
-| 1     |     4 |     8 |
-|       | 7     |     4 |
-|       |   9   | 7 1   |
-+-------+-------+-------+
-(4.41 secs, 1,864,369,064 bytes)
 
+withEmptyBlocks 4
++-------+-------+-------+
+| 1 9 3 | 5 6 2 | 8 7 4 |
+| 7 6 5 | 8 9 4 | 1 2 3 |
+| 2 8 4 | 3 7 1 | 9 5 6 |
++-------+-------+-------+
+| 4 3 9 | 2 8 7 | 5 6 1 |
+| 5 1 2 | 6 3 9 | 4 8 7 |
+| 8 7 6 | 1 4 5 | 2 3 9 |
++-------+-------+-------+
+| 3 2 7 | 9 1 8 | 6 4 5 |
+| 6 5 1 | 4 2 3 | 7 9 8 |
+| 9 4 8 | 7 5 6 | 3 1 2 |
++-------+-------+-------+
++-------+-------+-------+
+| 1 9 3 |       |       |
+| 7 6   |       |       |
+| 2   4 |       |       |
++-------+-------+-------+
+|       |   8 7 | 5 6 1 |
+|       | 6 3 9 |   8   |
+|       |     5 |     9 |
++-------+-------+-------+
+|       |       |     5 |
+|       | 4 2 3 |     8 |
+|       | 7     | 3 1 2 |
++-------+-------+-------+
+-}
 
-
-
+{-
+It is mathematically not possible to have 5 or more empty 3x3 blocks
+https://puzzling.stackexchange.com/questions/309/what-is-the-maximum-number-of-empty-3x3-blocks-a-proper-sudoku-can-have
+In summary, the four solved boxes must be placed on odd boxes (corners and center), but no combination exists there for the boxes to be solved. Thus, the puzzle requires more than four boxes to be solved.
 -}
