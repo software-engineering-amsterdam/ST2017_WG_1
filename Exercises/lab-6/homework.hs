@@ -390,7 +390,7 @@ findFalsePositiveMr' 3 (take 100 carmichael)
 This method is better, it give less false positives.
 -}
 
--- Exercise 6.2
+--------------------------- Excersise 6.2 -------------------------------
 -- Time 1 hour
 
 mersennePrimes :: Int -> [Integer] -> IO [Integer]
@@ -409,6 +409,9 @@ These are mersennePrimes because a mersennePrimes is in the form of (2^p)-1. Whe
 The probability is high that these are primes. There is a very small chance that you get a false Positive prime from the Miller-Rabin function.
 You also check whever (2^p)-1 is a prime so you have to have two false positives.
 -}
+
+--------------------------- Excersise 7 -------------------------------
+-- Time 2 hours
 
 rsaPrimeList :: Integer -> IO Integer
 rsaPrimeList k = do num <- randomRIO (2^(k-1), 2^k-1)
