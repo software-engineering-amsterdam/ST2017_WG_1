@@ -3,6 +3,7 @@ module Main
 where
 
 import System.Random
+import Test.QuickCheck
 
 factorsNaive :: Integer -> [Integer]
 factorsNaive n0 = factors' n0 2 where
@@ -139,9 +140,6 @@ primeMR k n = do
     if exM a (n-1) n /= 1 || mrComposite a n
     then return False else primeMR (k-1) n
 
-composites :: [Integer]
-composites = error "not yet implemented"
-
 encodeDH :: Integer -> Integer -> Integer -> Integer
 encodeDH p k m = m*k `mod` p
 
@@ -214,27 +212,123 @@ bound  = 131
 
 
 --
-timesPower :: Integer -> Integer -> Integer
-timesPower x n = fromIntegral (length powrList)
-                  where powrList = takeWhile (\a -> a <= x ) [ n^t | t <- [1..]]
+-- Exercise 1
+-- Time 4 hours
 
--- exM 2 3 4 = 2^3 mod 4
 exM :: Integer -> Integer -> Integer -> Integer
-exM n f m | True = fromIntegral (normalMods)
-          | f < 2 = (n^f) `mod` m
-          | otherwise = (iterate doMods pModAnswer) !! (normalMods)
-                          where fMod = n `mod` m
-                                doPModsTimes = fromIntegral (timesPower f 2)
-                                powerMods = tail (iterate doMods fMod)
-                                normalMods = fromIntegral (f - (2 ^ doPModsTimes))
-                                doMods = (\x -> (x * fMod) `mod` m)
-                                pModAnswer = fromIntegral (powerMods !! doPModsTimes)
--- pexM 3 2 7
--- 3 mod 7 = 3. 3 * 3 = 9     9 mod 7 = 2
--- This goes wrong
+exM n f m | f == 0 = 1 `mod` m
+          | f == 1 = n `mod` m
+          | even f = (divM * divM) `mod` m
+          | otherwise = (n * prevMod) `mod` m
+              where divM = exM n (f `div` 2) m
+                    prevMod = exM n (f-1) m
 
-pexM n f m = exM n f m == (n^f) `mod` m
-pExmTest1 = exM 2 90 13 == 12
+-- Quick check to compare to the normal mod
+pexM (Positive n) (Positive f) (Positive m) = exM n f m == (n^f) `mod` m
+pexM' n f m = exM n f m == (n^f) `mod` m
 
 main :: IO ()
-main = do return pexM 3 2 7
+main = do quickCheck pexM
+
+{-
+main
++++ OK, passed 100 tests.
+-}
+
+
+-- Exercise 2
+-- Time 1 hour
+
+{-
+  expM 34 809700 23
+  12
+  (0.04 secs, 1,458,128 bytes)
+
+  exM 34 809700 23
+  12
+  (0.00 secs, 83,824 bytes)
+
+  expM 34 8097000 23
+  2
+  (0.41 secs, 14,906,312 bytes)
+
+  exM 34 8097000 23
+  2
+  (0.01 secs, 86,456 bytes)
+
+  expM 34 80970000 23
+  12
+  (5.26 secs, 150,256,256 bytes)
+
+  exM 34 80970000 23
+  12
+  (0.00 secs, 86,400 bytes)
+
+  Executing speed
+  factor                exM               expM
+  f = 809700            0.00              0.04
+  f = 8097000           0.01              0.41
+  f = 80970000          0.00              5.26
+
+  Memory usage
+  factor                exM                 expM
+  f = 809700            83,824 bytes        1,458,128 bytes
+  f = 8097000           86,456 bytes        14,906,312 bytes
+  f = 80970000          86,400 bytes        150,256,256 bytes
+
+  You can see that the speed and memory usage climbs very fast with expM and not with exM
+-}
+
+-- Exercise 3
+-- Time 1 hour
+
+composites :: [Integer]
+composites = [x | x <- [2..], (not . prime) x ]
+
+-- Exercise 4
+-- Time 1 hour
+
+-- https://stackoverflow.com/questions/27892035/list-average-for-ints
+average :: [Integer] -> Integer
+average xs = (fromInteger (sum xs)) `div` (toInteger (length xs))
+
+findFalsePositive :: Int -> [Integer] -> IO (Integer)
+findFalsePositive k testValues = do pTest <- primeTestsF k (check)
+                                    if pTest then return check
+                                             else (findFalsePositive k (tail testValues))
+                                    where check = head testValues
+
+findFalsePositiveList :: Int -> [Integer] -> Int -> IO [Integer]
+findFalsePositiveList k testValues n | n <= 0 = return []
+                                     | otherwise = do x <- findFalsePositive k testValues
+                                                      n <- findFalsePositiveList k testValues (n-1)
+                                                      return (x : n)
+
+getFalsePositiveAvg :: Int -> [Integer] -> Int -> IO (Integer)
+getFalsePositiveAvg k testValues n = do list <- findFalsePositiveList k testValues n
+                                        return (average list)
+
+{-
+findFalsePositive 1 composites
+15
+
+findFalsePositive 2 composites
+301
+
+findFalsePositive 3 composites
+1105
+
+When you do multiple tests, you see that the value of findFalsePositive will differ. I did an extra test where we calculate the average
+of 1000 tests:
+
+getFalsePositiveAvg 1 composites 1000
+37
+
+getFalsePositiveAvg 2 composites 1000
+406
+
+getFalsePositiveAvg 3 composites 1000
+1481
+
+Now you can see that the false positives will accrue later when the k is increased.
+-}
