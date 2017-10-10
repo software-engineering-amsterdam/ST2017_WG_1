@@ -399,3 +399,24 @@ findFalsePositiveMr' 3 (take 1000 carmichael)
 
 This method is better, it give less false positives
 -}
+
+-- Exercise 6.2
+-- Time 1 hour
+
+mersennePrimes :: Int -> [Integer] -> IO [Integer]
+mersennePrimes _ [] = return []
+mersennePrimes k (p:ps) = do ip <- primeMR k mPrime
+                             if ip then do next' <- next
+                                           return (mPrime : next')
+                                   else next
+                             where mPrime = (2^p) - 1
+                                   next = mersennePrimes k ps
+
+{-
+mersennePrimes 10 (take 100 primes)
+[3,7,31,127,8191,131071,524287,2147483647,2305843009213693951,618970019642690137449562111,162259276829213363391578010288127,170141183460469231731687303715884105727,6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057151]
+
+These are mersennePrimes because a mersennePrimes is in the form of (2^p)-1. Where P is a prime.
+The probability is high that these are primes. There is a very small chance that you get a false Positive prime from the Miller-Rabin function.
+You also check whever (2^p)-1 is a prime so you have to have two false positives.
+-}
