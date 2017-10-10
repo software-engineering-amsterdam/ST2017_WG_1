@@ -391,13 +391,13 @@ findFalsePositiveMr' k (check:checks) = do pTest <- primeMR k (check)
 findFalsePositiveMr' 1 (take 100 carmichael)
 [56052361,2301745249,663805468801,6323547512449,7622722964881,8681793690961,14470947115561,14685655594249,17167430884969,22027380041449,39782913594409,77833567590769,98445661027561,127393969917241,177548395641481]
 
-findFalsePositiveMr' 2 (take 1000 carmichael)
+findFalsePositiveMr' 2 (take 100 carmichael)
 [98445661027561,390854788519609,413847154073161,5690586528027001,105293775654920089,855337156975081441,1154558595724288849,1451571149015348329,1963100046228106321,2208897084749237929]
 
-findFalsePositiveMr' 3 (take 1000 carmichael)
+findFalsePositiveMr' 3 (take 100 carmichael)
 []
 
-This method is better, it give less false positives
+This method is better, it give less false positives.
 -}
 
 -- Exercise 6.2
@@ -419,4 +419,58 @@ mersennePrimes 10 (take 100 primes)
 These are mersennePrimes because a mersennePrimes is in the form of (2^p)-1. Where P is a prime.
 The probability is high that these are primes. There is a very small chance that you get a false Positive prime from the Miller-Rabin function.
 You also check whever (2^p)-1 is a prime so you have to have two false positives.
+-}
+
+rsaPrimeList :: Integer -> IO Integer
+rsaPrimeList k = do num <- randomRIO (2^(k-1), 2^k-1)
+                    isPrime <- primeMR 10 num
+                    if (isPrime) then return num
+                                 else rsaPrimeList k
+
+rsaPair :: Integer -> IO (Integer, Integer)
+rsaPair k = do x <- rsaPrimeList k
+               y <- rsaPrimeList k
+               if ( x == y) then rsaPair k
+                            else return (x,y)
+
+runRSA :: (Integer,Integer) -> Integer -> IO ()
+runRSA (x,y) v = do print "Encoding "
+                    print v
+                    print "p"
+                    print x
+                    print "q"
+                    print y
+                    print "pubKey"
+                    print pubKey
+                    print "privKey"
+                    print privKey
+                    print "encodeCip"
+                    print encodeCip
+                    print "cipDecode"
+                    print cipDecode
+                 where pubKey = rsaPublic x y
+                       privKey = rsaPrivate x y
+                       encodeCip = rsaEncode pubKey v
+                       cipDecode = rsaDecode privKey encodeCip
+
+doRSA k v = do (x,y) <- rsaPair k
+               runRSA (x,y) v
+
+{-
+doRSA 100 10656723443534
+"Encoding "
+10656723443534
+"p"
+760312092755739826947417093877
+"q"
+1185039863844062541918147021493
+"pubKey"
+(5,901000138878256174651926595168787428987062424529721517698361)
+"privKey"
+(360400055551302469860770638066736830812185048864342381433197,901000138878256174651926595168787428987062424529721517698361)
+"encodeCip"
+422744751805116888042001903830014031821411770647595689433401
+"cipDecode"
+10656723443534
+
 -}
